@@ -96,15 +96,25 @@ fun write_body body param ctxt =
 
 (*Proofs might depend on a strategy specified by the user*)
 fun write_proof lists name ctxt =
- if lists = []
+let
+  val strategy = IsaRARE_Config.getStrategy ctxt
+in
+ if strategy = IsaRARE_Config.None (*Proofs are turned off*)
+ then ""
+ else if lists = []
  then
-  (if  IsaRARE_Config.getStrategy ctxt = IsaRARE_Config.Strings
+  (if strategy = IsaRARE_Config.Minimum
+   then "  by auto\n\n"
+   else if strategy = IsaRARE_Config.Strings
    then "    by (simp add: cvc_string_rewrite_defs)\n"
-   else  "  by auto\n\n")
+   else  "   using " ^ name ^  "_lemma\n by auto\n")
  else
   let
-   fun write_cases xs = if xs = [] then ""
+   fun write_cases xs =
+     if xs = []
+     then ""
      else map (fn str => "  apply (cases " ^ str ^ ")\n") xs |> foldl1 (String.^)
+
    fun write_subgoal xs = if xs = [] then "" else map (fn str => str ^ "s ") xs |> foldl1 (String.^)
 
    fun write_induct []= "" |
@@ -112,19 +122,18 @@ fun write_proof lists name ctxt =
                                "    apply simp_all\n"
                                ^ write_induct xs
 
-   val tactic = write_cases lists ^ "  subgoal for " ^ write_subgoal lists ^ "\n" ^
-               "    apply (simp add: cvc_list_left_transfer cvc_list_right_transfer_op cvc_list_both_transfer_op)\n" ^ 
-               write_induct lists ^
-               (if  IsaRARE_Config.getStrategy ctxt = IsaRARE_Config.Strings
-               then "    apply (simp_all add: cvc_string_rewrite_defs)\n"
-               else "") ^
-               "    apply (simp_all add: cvc_rewrites_fold)\n" ^
+   val tactic =
+               write_cases lists ^ "  subgoal for " ^ write_subgoal lists ^ "\n" ^
+               "    apply (simp only: cvc_list_left_transfer cvc_list_right_transfer_op cvc_list_both_transfer_op)\n" ^ 
+               (if strategy = IsaRARE_Config.Full then write_induct lists else "") ^
+               (if strategy = IsaRARE_Config.Strings then "    apply (simp_all add: cvc_string_rewrite_defs)\n" else "") ^
+               (if strategy = IsaRARE_Config.Full then "    apply (simp_all add: cvc_rewrites_fold)\n" else "") ^
                "    by (simp_all add: " ^ name ^  "_lemma)\n" ^
                "  done\n\n"
   in
     Library.cat_lines [tactic]
   end
-
+end
 
 (* Type Re-inference *)
 
