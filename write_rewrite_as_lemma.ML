@@ -94,7 +94,8 @@ fun write_body body param ctxt =
    "  shows \"" ^ goal' ^ goal ^ "\""
   end
 
-fun write_auto lists name ctxt =
+(*Proofs might depend on a strategy specified by the user*)
+fun write_proof lists name ctxt =
  if lists = []
  then
   (if  IsaRARE_Config.getStrategy ctxt = IsaRARE_Config.Strings
@@ -242,7 +243,7 @@ local
  [S [Sym "x", Sym "?BitVec"], S [Sym "c", S [Sym "_", Sym "BitVec", Num 1]]])*)
 
    in
-    [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_auto list_param2 name ctxt]
+    [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt]
    end |                                                
   write_lemma (Rewrite_Rule ((Rule_Type DEFINE_COND_RULE)::(Rule_Name name)::[Par (param,list_param), Let_Defs ld, Precondition ass, Match m, Target t])) ctxt =
    let
@@ -255,7 +256,7 @@ local
     val param2 = map (fn (SMTLIB.S [SMTLIB.Sym name, SMTLIB.Sym typ]) => name) param
 
    in 
-     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_auto list_param2 name ctxt]
+     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt]
    end |
   write_lemma (Rewrite_Rule ((Rule_Type DEFINE_STAR_RULE)::(Rule_Name name)::[Par (param,list_param), Let_Defs ld, Context_Expr context_expr, Match m, Target t])) ctxt =
    let (*TODO*)
@@ -274,7 +275,7 @@ local
     val param2 = map (fn (SMTLIB.S [SMTLIB.Sym name, SMTLIB.Sym typ]) => name) param
 
    in
-     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_auto list_param2 name ctxt]
+     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt]
    end |
   write_lemma rwr _ = (@{print}("rwr",rwr);raise WRITE_LEMMA_FROM_DSL_REWRITE ("Could not write rewrite rule to lemma, has wrong form"))
 end
