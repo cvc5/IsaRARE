@@ -1,5 +1,5 @@
 theory IsaRARE_Tests
-  imports IsaRARE
+  imports "../IsaRARE"
 begin
 
 
@@ -20,19 +20,26 @@ In practise the user can also generate full proofs and delete unnecessary steps,
 using the Minimum strategy for these cases  *)
 declare[[IsaRARE_proofStrategy = "Minimum"]]
 parse_rare_file "~/Sources/IsaRARE/Tests/Regression/boolean_rewrites" "Boolean_Rewrites_Lemmas" "Boolean_Rewrites"
-declare[[IsaRARE_proofStrategy = "Full"]]
-
-
-
-
-(*parse_rare_file "~/Sources/IsaRARE/Tests/Regression/uf_rewrites" "" "UF_Rewrites"
+parse_rare_file "~/Sources/IsaRARE/Tests/Regression/uf_rewrites" "" "UF_Rewrites"
 parse_rare_file "~/Sources/IsaRARE/Tests/Regression/builtin_rewrites" "" "Builtin_Rewrites"
 parse_rare_file "~/Sources/IsaRARE/Tests/Regression/set_rewrites" "" "Set_Rewrites"
-parse_rare_file "~/Sources/IsaRARE/Tests/Regression/arith_rewrites" "Arith_Rewrites_Lemmas" "Arith_Rewrites"
 parse_rare_file "~/Sources/IsaRARE/Tests/Regression/array_rewrites" "" "Array_Rewrites"
-declare[[IsaRARE_proofStrategy = "Strings"]]
+
+(*Set strategy to Arith so proofs for lemmas with lists can all be done automatic *)
+declare[[IsaRARE_proofStrategyTheory = "Arith"]]
+parse_rare_file "~/Sources/IsaRARE/Tests/Regression/arith_rewrites" "Arith_Rewrites_Lemmas" "Arith_Rewrites"
+
+(*Set strategy to String so proofs for lemmas with lists can all be done automatic *)
+declare[[IsaRARE_proofStrategyTheory = "Strings"]]
 parse_rare_file "~/Sources/IsaRARE/Tests/Regression/string_rewrites" "" "String_Rewrites"
-declare[[IsaRARE_proofStrategy = "None"]]
+declare[[IsaRARE_proofStrategyTheory = "All"]]
+
+
+
+
+(*
+
+
 parse_rare_file "~/Sources/IsaRARE/Tests/Regression/bv_rewrites" "" "Bitvector_Rewrites"*)
 
 end
