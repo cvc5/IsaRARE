@@ -94,12 +94,12 @@ declare [[ML_print_depth=10000]]
 section \<open>Test\<close>
 
 declare[[IsaRARE_proofStrategy = "Minimum"]]
-parse_rare_file "~/Sources/IsaRARE/Tests/Regression/boolean_rewrites" "Boolean_Rewrites_Lemmas" "Boolean_Rewrites"
-parse_rare_file "~/Sources/IsaRARE/Tests/Regression/uf_rewrites" "" "UF_Rewrites"
-parse_rare_file "~/Sources/IsaRARE/Tests/Regression/builtin_rewrites" "" "Builtin_Rewrites"
+parse_rare_file "~/IsaRARE/Tests/Regression/boolean_rewrites" "Boolean_Rewrites_Lemmas" "Boolean_Rewrites"
+parse_rare_file "~/IsaRARE/Tests/Regression/uf_rewrites" "" "UF_Rewrites"
+parse_rare_file "~/IsaRARE/Tests/Regression/builtin_rewrites" "" "Builtin_Rewrites"
 
 declare[[IsaRARE_proofStrategyTheory = "Arith"]]
-parse_rare_file "~/Sources/IsaRARE/Tests/Regression/arith_rewrites" "Arith_Rewrites_Lemmas" "Arith_Rewrites"
+parse_rare_file "~/IsaRARE/Tests/Regression/arith_rewrites" "Arith_Rewrites_Lemmas" "Arith_Rewrites"
 
 
 declare[[IsaRARE_proofStrategy = "Full"]]
