@@ -3,11 +3,22 @@ theory IsaRARE
   keywords "parse_rare_file" "parse_rare" :: diag
 begin
 
-ML_file \<open>isarare_config.ML\<close>
-ML_file \<open>parse_rare.ML\<close>
-ML_file \<open>rare_impl_assump.ML\<close>
-ML_file \<open>rare_lists.ML\<close>
-ML_file \<open>write_rewrite_as_lemma.ML\<close>
+section \<open>Introduction\<close>
+
+text\<open>IsaRARE is a tool that transforms rewrite rules in the RARE language into Isabelle lemmas.\<close>
+
+
+section \<open>Components\<close>
+
+ML_file \<open>src/isarare_config.ML\<close>
+ML_file \<open>src/parse_rare.ML\<close>
+ML_file \<open>src/rare_impl_assump.ML\<close>
+ML_file \<open>src/rare_lists.ML\<close>
+ML_file \<open>src/write_rewrite_as_lemma.ML\<close>
+
+
+
+
 
 (*
 Note: IsaRARE can currently not deal with line breaks in rewrite rules
@@ -61,6 +72,11 @@ val x = OS.Process.getEnv
  end))
 \<close>
 
+lemmas cvc_arith_rewrite_defs = SMT.z3div_def
+
+
+section \<open>Options\<close>
+
 declare[[IsaRARE_verbose = true]] (*Get additional information*)
 declare[[IsaRARE_debug = true]] (*Get debugging information*)
 declare[[IsaRARE_implAssump = true]] (*Turn implicit assumption generation on or off (Warning this is an expert option: Lemmas might not be provable without the assumptions) *)
@@ -74,6 +90,19 @@ declare [[ML_print_depth=10000]]
 (*parse_rare_file "$IsaRARE_HOME/Tests/mixed_rewrites" "" "Mixed_Rewrites"
 
 *)
+
+section \<open>Test\<close>
+
+declare[[IsaRARE_proofStrategy = "Minimum"]]
+parse_rare_file "~/Sources/IsaRARE/Tests/Regression/boolean_rewrites" "Boolean_Rewrites_Lemmas" "Boolean_Rewrites"
+parse_rare_file "~/Sources/IsaRARE/Tests/Regression/uf_rewrites" "" "UF_Rewrites"
+parse_rare_file "~/Sources/IsaRARE/Tests/Regression/builtin_rewrites" "" "Builtin_Rewrites"
+
+declare[[IsaRARE_proofStrategyTheory = "Arith"]]
+parse_rare_file "~/Sources/IsaRARE/Tests/Regression/arith_rewrites" "Arith_Rewrites_Lemmas" "Arith_Rewrites"
+
+
+declare[[IsaRARE_proofStrategy = "Full"]]
 
 (*TODO: Documentation adding new operators to parser*)
 
