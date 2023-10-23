@@ -1,0 +1,3 @@
+(define-rule* bv-concat-flatten ((xs ?BitVec :list)  (s ?BitVec)  (ys ?BitVec :list)  (zs ?BitVec :list)) (concat xs (concat s ys) zs) (concat xs s ys zs))
+
+(define-cond-rule bv-concat-extract-merge ((xs ?BitVec :list) (s ?BitVec) (ys ?BitVec :list) (i Int) (j Int) (j1 Int) (k Int)) (= j1 (+ j 1)) (concat xs (extract k j1 s) (extract j i s) ys) (concat xs (extract k i s) ys))
