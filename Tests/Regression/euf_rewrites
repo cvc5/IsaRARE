@@ -3,7 +3,6 @@
 (define-rule bool-eq-true ((t Bool)) (= t true) t)
 (define-rule bool-eq-false ((t Bool)) (= t false) (not t))
 (define-rule bool-eq-nrefl ((x Bool)) (= x (not x)) false)
-;(define-rule bool-eq-nnf ((x Bool) (y Bool)) (= (not x) y) (not (= x y)))
 
 (define-rule bool-impl-false1 ((t Bool)) (=> t false) (not t))
 (define-rule bool-impl-false2 ((t Bool)) (=> false t) true)
@@ -41,7 +40,17 @@
 (define-rule ite-then-lookahead-self ((c Bool) (x Bool)) (ite c c x) (ite c true x))
 (define-rule ite-else-lookahead-self ((c Bool) (x Bool)) (ite c x c) (ite c x false))
 
+(define-rule ite-true-cond ((x ?) (y ?)) (ite true x y) x)
+(define-rule ite-false-cond ((x ?) (y ?)) (ite false x y) y)
+(define-rule ite-not-cond ((c Bool) (x ?) (y ?)) (ite (not c) x y) (ite c y x))
+(define-rule ite-eq-branch ((c Bool) (x ?)) (ite c x x) x)
 
-(define-rule bool-commutative-and ((x Bool) (y Bool)) (and x y) (and y x))
-(define-rule bool-commutative-or ((x Bool) (y Bool)) (or x y) (or y x))
-(define-rule bool-commutative-xor ((x Bool) (y Bool)) (xor x y) (xor y x))
+(define-rule ite-then-lookahead ((c Bool) (x ?) (y ?) (z ?)) (ite c (ite c x y) z) (ite c x z))
+(define-rule ite-else-lookahead ((c Bool) (x ?) (y ?) (z ?)) (ite c x (ite c y z)) (ite c x z))
+(define-rule ite-then-neg-lookahead ((c Bool) (x ?) (y ?) (z ?)) (ite c (ite (not c) x y) z) (ite c y z))
+(define-rule ite-else-neg-lookahead ((c Bool) (x ?) (y ?) (z ?)) (ite c x (ite (not c) y z)) (ite c x y))
+
+(define-rule eq-refl ((t ?)) (= t t) true)
+(define-rule eq-symm ((t ?) (s ?)) (= t s) (= s t))
+
+(define-rule distinct-binary-elim ((t ?) (s ?)) (distinct t s) (not (= t s)))
