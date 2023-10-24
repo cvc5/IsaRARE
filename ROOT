@@ -15,8 +15,6 @@ theories
 
 session "IsaRARE-Results" in "Tests/Regression" = "HOL-CVC" +
 theories
-  "Boolean_Rewrites"
-  "UF_Rewrites"
-  "Builtin_Rewrites"
+  "EUF_Rewrites"
   "Set_Rewrites"
   "Array_Rewrites"
