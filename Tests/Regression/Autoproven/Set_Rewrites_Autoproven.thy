@@ -1,4 +1,4 @@
-theory Set_Rewrites
+theory Set_Rewrites_Autoproven
   imports "HOL-CVC.Dsl_Nary_Ops" 
 begin
 

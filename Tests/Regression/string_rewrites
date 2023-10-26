@@ -8,11 +8,6 @@
 
 (define-cond-rule str-eq-ctn-false ((x1 ? :list) (x ?) (x2 ? :list) (y ?)) (= (str.contains y x) false) (= (str.++ x1 x x2) y) false)
 
-;(define-cond-rule str-eq-len-false ((x String) (y String))
-;  (not (= (str.len x) (str.len y)))
-;  (= x y)
-;  false)
-
 (define-rule str-concat-flatten ((xs ? :list) (s ?) (ys ? :list) (zs ? :list)) (str.++ xs (str.++ s ys) zs) (str.++ xs s ys zs))
 
 ; flips so that it can be applied to both sides easier
@@ -65,10 +60,6 @@
 (define-cond-rule str-substr-concat1 ((s1 ?) (s2 ? :list) (n Int) (m Int)) (and (>= n 0) (>= (str.len s1) (+ n m))) (str.substr (str.++ s1 s2) n m) (str.substr s1 n m))
 
 (define-cond-rule str-substr-full ((s ?) (n Int)) (>= n (str.len s)) (str.substr s 0 n) s)
-;(define-cond-rule str-substr-self-len ((s ?) (n Int) (m Int))
-;  (>= m (str.len s))
-;  (str.substr s n m)
-;  (str.substr s n (str.len s)))
 
 (define-rule str-contains-refl ((x ?)) (str.contains x x) true)
 
@@ -80,12 +71,6 @@
 (define-rule str-concat-emp ((xs String :list) (ys String :list))  (str.++ xs "" ys)  (str.++ xs ys))
 
 (define-rule str-at-elim ((x ?) (n Int)) (str.at x n) (str.substr x n 1))
-
-; not effective since due to not proving inequalities on length
-;(define-cond-rule str-replace-self ((t ?) (s ?)) 
-;  (>= (str.len s) (str.len t))
-;  (str.replace t s t)
-;  t)
 
 ; =============== Regular expression rules
 
@@ -114,8 +99,3 @@
 
 (define-cond-rule str-in-re-range-elim ((s String) (c1 String) (c2 String)) (and (= (str.len c1) 1) (= (str.len c2) 1)) (str.in_re s (re.range c1 c2)) (and (<= (str.to_code c1) (str.to_code s)) (<= (str.to_code s) (str.to_code c2))))
 
-; =============== Sequences-specific rules
-
-;(define-rule seq-len-unit ((x ?)) (str.len (seq.unit x)) 1)
-;(define-rule seq-nth-unit ((x ?)) (seq.nth (seq.unit x) 0) x)
-;(define-rule seq-rev-unit ((x ?)) (str.rev (seq.unit x)) (seq.unit x))

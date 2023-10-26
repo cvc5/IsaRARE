@@ -7,8 +7,8 @@ Diagnostic tools for IsaRARE.
 
 signature ISARARE_CONFIG =
 sig
-  datatype proof_strategy = None | Minimum | Full 
-  datatype proof_strategy_theory = All | Strings | Arith
+  datatype proof_strategy = None | Minimum | Full | TACAS_Autoprove 
+  datatype proof_strategy_theory = All | Strings | Arith | BV
 
   (*Options*)
   val verbose: bool Config.T
@@ -31,8 +31,8 @@ end;
 structure IsaRARE_Config: ISARARE_CONFIG =
 struct
 
-datatype proof_strategy = None | Minimum | Full 
-datatype proof_strategy_theory = All | Strings | Arith
+datatype proof_strategy = None | Minimum | Full | TACAS_Autoprove 
+datatype proof_strategy_theory = All | Strings | Arith | BV
 
 val verbose = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_verbose\<close> (K false)
 val debug = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_debug\<close> (K false)
@@ -41,8 +41,8 @@ val listsAsVar = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_listsAsVar\<
 val proofStrategy = Attrib.setup_config_string \<^binding>\<open>IsaRARE_proofStrategy\<close> (K "Full")
 val proofStrategyTheory = Attrib.setup_config_string \<^binding>\<open>IsaRARE_proofStrategyTheory\<close> (K "All")
 
-val str_to_proof_strategy = [("None",None),("Minimum",Minimum),("Full", Full)]
-val str_to_proof_strategy_theory = [("All",All),("Strings",Strings),("Arith",Arith)]
+val str_to_proof_strategy = [("None",None),("Minimum",Minimum),("Full", Full),("TACAS_Autoprove",TACAS_Autoprove)]
+val str_to_proof_strategy_theory = [("All",All),("Strings",Strings),("Arith",Arith),("BV",BV)]
 
 fun getStrategy ctxt =
   (case List.find (fn (str,_) => (Config.get ctxt proofStrategy) = str) str_to_proof_strategy of

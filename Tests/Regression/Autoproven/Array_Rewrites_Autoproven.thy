@@ -1,4 +1,4 @@
-theory Array_Rewrites
+theory Array_Rewrites_Autoproven
   imports "HOL-CVC.Dsl_Nary_Ops" 
 begin
 

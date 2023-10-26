@@ -87,24 +87,11 @@ declare [[ML_print_depth=10000]]
 
 (*Test*)
 (*TODO: Get current directory*)
-(*parse_rare_file "$IsaRARE_HOME/Tests/mixed_rewrites" "" "Mixed_Rewrites"
 
-*)
 
 section \<open>Test\<close>
 
-declare[[IsaRARE_proofStrategy = "Minimum"]]
-
-parse_rare_file "~/IsaRARE/Tests/Regression/euf_rewrites" "Boolean_Rewrites_Lemmas" "EUF_Rewrites"
-parse_rare_file "~/IsaRARE/Tests/Regression/set_rewrites" "" "Set_Rewrites"
-parse_rare_file "~/IsaRARE/Tests/Regression/array_rewrites" "" "Array_Rewrites"
-
-
-declare[[IsaRARE_proofStrategyTheory = "Arith"]]
-parse_rare_file "~/IsaRARE/Tests/Regression/arith_rewrites" "Arith_Rewrites_Lemmas" "Arith_Rewrites"
-
-
-declare[[IsaRARE_proofStrategy = "Full"]]
+(*parse_rare_file "$IsaRARE_HOME/Tests/mixed_rewrites" "" "Mixed_Rewrites"*)
 
 (*TODO: Documentation adding new operators to parser*)
 

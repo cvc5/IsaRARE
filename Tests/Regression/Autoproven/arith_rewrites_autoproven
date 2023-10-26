@@ -1,8 +1,3 @@
-(define-rule arith-plus-zero ((t Int :list) (s Int :list)) (+ t 0 s) (+ t s))
-
-(define-rule arith-mul-one ((t Int :list) (s Int :list)) (* t 1 s) (* t s))
-(define-rule arith-mul-zero ((t Int :list) (s Int :list)) (* t 0 s) 0)
-
 (define-rule arith-int-div-one ((t Int)) (div t 1) t)
 
 (define-rule arith-neg-neg-one ((t Int)) (* (- 1) (* (- 1) t)) t)
@@ -24,12 +19,3 @@
 (define-rule arith-refl-lt ((t Int)) (< t t) false)
 (define-rule arith-refl-geq ((t Int)) (>= t t) true)
 (define-rule arith-refl-gt ((t Int)) (> t t) false)
-
-(define-rule* arith-plus-flatten ((xs Int :list) (w Int) (ys Int :list) (zs Int :list)) (+ xs (+ w ys) zs) (+ xs w ys zs))
-
-(define-rule* arith-mult-flatten ((xs Int :list) (w Int) (ys Int :list) (zs Int :list)) (* xs (* w ys) zs) (* xs w ys zs))
-
-(define-rule* arith-mult-dist ((x Int) (y Int) (z Int) (w Int :list)) (* x (+ y z w)) (+ (* x y) (* x (+ z w))))
-
-(define-rule* arith-plus-cancel1 ((t Int :list) (x Int) (s Int :list) (r Int :list)) (+ t x s (* (- 1) x) r) (+ t s r))
-(define-rule* arith-plus-cancel2 ((t Int :list) (x Int) (s Int :list) (r Int :list)) (+ t (* (- 1) x) s x r) (+ t s r))

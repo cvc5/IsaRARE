@@ -95,19 +95,60 @@ fun write_body body param ctxt =
   end
 
 (*Proofs might depend on a strategy specified by the user*)
-fun write_proof lists name ctxt =
+(*For the TACAS artifact submission we had to add more strategies*)
+fun write_proof lists name ctxt param  =
 let
   val strategy = IsaRARE_Config.getStrategy ctxt
   val theory_strategy = IsaRARE_Config.getStrategyTheory ctxt
 
 in
- if strategy = IsaRARE_Config.None (*Proofs are turned off*)
+ if strategy = IsaRARE_Config.TACAS_Autoprove  (*TACAS strategy to *)
+ then 
+   if lists = []
+   then "  sledgehammer (*TODO*)"
+   else
+    let
+      fun write_cases xs =
+        if xs = []
+        then ""
+        else map (fn str => "  apply (cases " ^ str ^ ")\n") xs |> foldl1 (String.^)
+
+      fun write_subgoal xs = if xs = [] then "" else map (fn str => str ^ "s ") xs |> foldl1 (String.^)
+
+      val tactic =
+               write_cases lists ^ "  subgoal for " ^ write_subgoal lists ^ "\n" ^
+               "    apply (simp only: cvc_list_left_transfer cvc_list_right_transfer_op cvc_list_both_transfer_op)\n" ^   
+               "   sledgehammer (*TODO*) \n" ^
+               "  done\n\n"
+    in
+      Library.cat_lines [tactic]
+    end
+ else if theory_strategy = IsaRARE_Config.BV (*For TACAS to make sure file can be regenerated*)
+ then
+   let
+     
+   in 
+    "    apply ((rule impI)+)? \n" ^
+      " apply (subst rewrite_" ^ name ^ "_lemma[of cvc_a "^ String.concat (map (fn x => (  x) ^ " ") (rev param)) ^"]) \n" ^
+      "  apply (simp add: NO_MATCH_def)\n" ^
+ " apply force\n" ^
+ "   apply auto?\n" ^
+ " done\n" 
+   end
+
+(* apply rule+
+  apply (subst rewrite_bv_concat_flatten_lemma[of cvc_a xs s ys zs ])
+    apply (simp add: NO_MATCH_def)
+  apply force
+  by auto*)
+ else if strategy = IsaRARE_Config.None (*Proofs are turned off*)
  then ""
  else if lists = []
  then
   (
    if theory_strategy = IsaRARE_Config.Strings
-   then "    by (simp add: cvc_string_rewrite_defs)\n"
+   then "    using " ^ name ^ "_lemma \n" ^
+        "    by auto \n"
    else if theory_strategy = IsaRARE_Config.Arith
    then "    using cvc_arith_rewrite_defs by auto\n"
    else if strategy = IsaRARE_Config.Minimum
@@ -131,9 +172,11 @@ in
                write_cases lists ^ "  subgoal for " ^ write_subgoal lists ^ "\n" ^
                "    apply (simp only: cvc_list_left_transfer cvc_list_right_transfer_op cvc_list_both_transfer_op)\n" ^ 
                (if strategy = IsaRARE_Config.Full then write_induct lists else "") ^
-               (if theory_strategy = IsaRARE_Config.Strings then "    apply (simp_all add: cvc_string_rewrite_defs)\n" else "") ^
+               (*(if theory_strategy = IsaRARE_Config.Strings then "    apply (simp_all add: cvc_string_rewrite_defs)\n" else "") ^*)
                (if strategy = IsaRARE_Config.Full then "    apply (simp_all add: cvc_rewrites_fold)\n" else "") ^
-               "    by (simp_all only: " ^ name ^  "_lemma)\n" ^
+               (if theory_strategy <> IsaRARE_Config.Strings
+                then "    by (simp_all only: " ^ name ^  "_lemma)\n"
+                else "    using " ^ name ^ "_lemma by auto\n" ) ^
                "  done\n\n"
   in
     Library.cat_lines [tactic]
@@ -183,7 +226,7 @@ fun parse_tree smtlib_tree list_param nr_pars ctxt =
    (*First the tree is parsed without considering lists*)
    val cx = empty_context ctxt Symtab.empty Symtab.empty
    val term = SMTLIB_Proof.term_of smtlib_tree cx |> fst
-   val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("After parsing to Isabelle terms (before adding list operators): ", Syntax.pretty_term ctxt term))
+   val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("After parsing to Isabelle terms (before adding list operators): ",term)) (* Syntax.pretty_term ctxt *)
 
    (*Then, the whole term is traversed to make terms lists and introduce corresponding operators*)
    val nary_term = if (Config.get ctxt IsaRARE_Config.listsAsVar)
@@ -214,17 +257,18 @@ local
 
    fun delete_question_mark l = l |> filter (fn x => not (x = "?"))
 
-   fun temp ("w"::"o"::"r"::"d"::ts) = (":"::":"::"l"::"e"::"n"::" ":: "w"::"o"::"r"::"d"::ts) |
-       temp (t::ts) = t :: temp ts|
+   fun 
+       temp ("t"::"y"::"p"::"e"::" "::"w"::"o"::"r"::"d"::ts) = ("l"::"e"::"n"::" "::"w"::"o"::"r"::"d"::ts) |
+       temp (t::ts) =  t :: temp ts|
        temp [] = []
 
   fun test (Const ("HOL.All", _) $ Abs (str, typ,((Const ("HOL.All", typ1) $ t1)))) =
     let
-      val new_type = implode ( (hackish_string_of_type ctxt typ |> raw_explode |> delete_question_mark)) (*LENGTH thing should happen in parser eventually*)
+      val new_type = implode (temp (hackish_string_of_type ctxt typ |> raw_explode |> delete_question_mark)) (*LENGTH thing should happen in parser eventually*)
     in
        str ^ "::\"" ^ new_type ^ "\"" ^ " and " ^ test ((Const ("HOL.All", typ1) $ t1))
     end |
-  test (Const ("HOL.All", _) $ Abs (str, typ,ts)) = str ^ "::\"" ^  (implode ( (hackish_string_of_type ctxt typ |> raw_explode |> delete_question_mark)))  ^ "\"" |
+  test (Const ("HOL.All", _) $ Abs (str, typ,ts)) = str ^ "::\"" ^  (implode (temp (hackish_string_of_type ctxt typ |> raw_explode |> delete_question_mark)))  ^ "\"" |
   test x = (@{print}("x",x);"")
   in
    if size (test res) = 0 then "" else "  fixes " ^ test res
@@ -257,7 +301,7 @@ local
  [S [Sym "x", Sym "?BitVec"], S [Sym "c", S [Sym "_", Sym "BitVec", Num 1]]])*)
 
    in
-    [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt]
+    [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt param2]
    end |                                                
   write_lemma (Rewrite_Rule ((Rule_Type DEFINE_COND_RULE)::(Rule_Name name)::[Par (param,list_param), Let_Defs ld, Precondition ass, Match m, Target t])) ctxt =
    let
@@ -270,7 +314,7 @@ local
     val param2 = map (fn (SMTLIB.S [SMTLIB.Sym name, SMTLIB.Sym typ]) => name) param
 
    in 
-     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt]
+     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt param2]
    end |
   write_lemma (Rewrite_Rule ((Rule_Type DEFINE_STAR_RULE)::(Rule_Name name)::[Par (param,list_param), Let_Defs ld, Context_Expr context_expr, Match m, Target t])) ctxt =
    let (*TODO*)
@@ -289,7 +333,7 @@ local
     val param2 = map (fn (SMTLIB.S [SMTLIB.Sym name, SMTLIB.Sym typ]) => name) param
 
    in
-     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt]
+     [write_lemma_header name, write_pars res ctxt, write_body res param2 ctxt, write_proof list_param2 name ctxt param2]
    end |
   write_lemma rwr _ = (@{print}("rwr",rwr);raise WRITE_LEMMA_FROM_DSL_REWRITE ("Could not write rewrite rule to lemma, has wrong form"))
 end
