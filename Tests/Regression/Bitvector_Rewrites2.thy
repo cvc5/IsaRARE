@@ -467,25 +467,6 @@ lemma rewrite_bv_sdivo_eliminate_lemma_h1:
 mask_full[where 'a="'b"]
     by (metis bit.compl_zero one_word_def word_size zero_word_def)
 
-lemma rewrite_bv_sdivo_eliminate_lemma:
-  fixes x::"'a::len word" and y::"'b::len word"
-  shows "NO_MATCH cvc_a (undefined x y) \<Longrightarrow> (x_c3::'b::len word) = Word.Word (0::int) \<and>
-   int (size x_c3) = int (size y) \<and>
-   (x_c0::'c::len word) = Word.Word (1::int) \<and>
-   int (size x_c0) = (1::int) \<and>
-   (x_c1::'d::len word) = Word.Word (0::int) \<and>
-   int (size x_c1) = int (size x) - (1::int) \<and>
-   (x_c2::'a::len word) = word_cat x_c0 x_c1 \<and>
-   int (size x_c2) = int (size x_c0) + int (size x_c1) \<longrightarrow>
-   smt_sdivo (itself::'e::len itself) x y = (x = x_c2 \<and> y = not x_c3)"
-  unfolding smt_sdivo_def
-  apply simp
-   using smt_sdivo_def[of x y, where 'c="'e"] 
-mask_full[where 'a="'b"]
-   apply simp
-   sorry
-
-
 lemma rewrite_bv_usubo_eliminate_lemma:
   fixes x::"'a::len word" and y::"'a::len word"
   shows "NO_MATCH cvc_a (undefined x y) \<Longrightarrow> (x_c3::'b::len word) = Word.Word (1::int) \<and>
@@ -610,6 +591,18 @@ lemma rewrite_bv_shl_by_const_0_lemma:
   apply (elim conjE)
   by simp
 
+lemma rewrite_bv_lshr_by_const_0_lemma:
+  fixes x::"'a::len word" and sz::"int"
+  shows "NO_MATCH cvc_a (undefined x sz) \<Longrightarrow> (x_c2::'a::len word) =
+   drop_bit (unat (x_c0::'b::len word)) (x_c1::'a::len word) \<and>
+   int (size x_c2) = int (size x_c1) \<and>
+   x_c1 = x \<and>
+   int (size x_c0) = int (size x_c1) \<and>
+   x_c0 = Word.Word (0::int) \<and> int (size x_c0) = sz \<longrightarrow>
+   x_c2 = x"
+  apply rule+
+  apply (elim conjE)
+  by simp
 
 lemma rewrite_bv_shl_by_const_11:
   fixes x::"'a::len word" and amount::"int" and sz::"int"
@@ -1450,6 +1443,7 @@ lemma rewrite_bv_neg_sub_lemma:
   fixes x::"'a::len word" and y::"'a::len word"
   shows "NO_MATCH cvc_a (undefined x y) \<Longrightarrow> - (x - y) = y - x"
   by simp
+
 
 
 end

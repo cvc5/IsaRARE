@@ -392,27 +392,7 @@ lemma [rewrite_bv_zero_extend_eliminate]:
   apply (simp add: NO_MATCH_def)
  apply force
    apply auto?
- done
-
-named_theorems rewrite_bv_sdivo_eliminate \<open>automatically_generated\<close>
-
-lemma [rewrite_bv_sdivo_eliminate]:
-  fixes x::"'a::len word" and y::"'b::len word"
-  shows "NO_MATCH cvc_a (undefined x y) \<Longrightarrow> (x_c3::'b::len word) = Word.Word (0::int) \<and>
-   int (size x_c3) = int (size y) \<and>
-   (x_c0::'c::len word) = Word.Word (1::int) \<and>
-   int (size x_c0) = (1::int) \<and>
-   (x_c1::'d::len word) = Word.Word (0::int) \<and>
-   int (size x_c1) = int (size x) - (1::int) \<and>
-   (x_c2::'a::len word) = word_cat x_c0 x_c1 \<and>
-   int (size x_c2) = int (size x_c0) + int (size x_c1) \<longrightarrow>
-   smt_sdivo (itself::'e::len itself) x y = (x = x_c2 \<and> y = not x_c3)"
-    apply ((rule impI)+)? 
- apply (subst rewrite_bv_sdivo_eliminate_lemma[of cvc_a x y ]) 
-  apply (simp add: NO_MATCH_def)
- apply force
-   apply auto?
- done
+  done
 
 named_theorems rewrite_bv_ite_equal_children \<open>automatically_generated\<close>
 
@@ -550,6 +530,25 @@ lemma [rewrite_bv_shl_by_const_0]:
    x_c2 = x"
     apply ((rule impI)+)? 
  apply (subst rewrite_bv_shl_by_const_0_lemma[of cvc_a x sz ]) 
+  apply (simp add: NO_MATCH_def)
+ apply force
+   apply auto?
+ done
+
+
+named_theorems rewrite_bv_lshr_by_const_0 \<open>automatically_generated\<close>
+
+lemma [rewrite_bv_lshr_by_const_0]:
+  fixes x::"'a::len word" and sz::"int"
+  shows "NO_MATCH cvc_a (undefined x sz) \<Longrightarrow> (x_c2::'a::len word) =
+   drop_bit (unat (x_c0::'b::len word)) (x_c1::'a::len word) \<and>
+   int (size x_c2) = int (size x_c1) \<and>
+   x_c1 = x \<and>
+   int (size x_c0) = int (size x_c1) \<and>
+   x_c0 = Word.Word (0::int) \<and> int (size x_c0) = sz \<longrightarrow>
+   x_c2 = x"
+    apply ((rule impI)+)? 
+ apply (subst rewrite_bv_lshr_by_const_0_lemma[of cvc_a x sz ]) 
   apply (simp add: NO_MATCH_def)
  apply force
    apply auto?

@@ -18,3 +18,13 @@ theories
   "Array_Rewrites"
   "Arith_Rewrites"
   "String_Rewrites"
+  "Bitvector_Rewrites"
+
+session "IsaRARE-Results-Autoproven" in "Tests/Regression/Autoproven" = "HOL-CVC" +
+theories
+  "EUF_Rewrites_Autoproven"
+  "Set_Rewrites_Autoproven"
+  "Array_Rewrites_Autoproven"
+  "Arith_Rewrites_Autoproven"
+  "String_Rewrites_Autoproven"
+  "Bitvector_Rewrites_Autoproven"
