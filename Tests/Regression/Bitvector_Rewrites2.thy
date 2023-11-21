@@ -396,7 +396,7 @@ lemma rewrite_bv_rotate_right_eliminate_1_lemma:
   using Suc_diff_1
   unfolding SMT.z3mod_def
   apply (simp add:  nat_mod_as_int)
-  sorry
+  by (smt (verit, del_insts) Suc_nat_eq_nat_zadd1 int_eq_iff nat_diff_distrib' nat_int_add word_size)
 
 
 lemma rewrite_bv_rotate_right_eliminate_2_lemma:
@@ -466,33 +466,6 @@ lemma rewrite_bv_sdivo_eliminate_lemma_h1:
     using smt_sdivo_def[of x y, where 'c="'c"] 
 mask_full[where 'a="'b"]
     by (metis bit.compl_zero one_word_def word_size zero_word_def)
-
-lemma rewrite_bv_usubo_eliminate_lemma:
-  fixes x::"'a::len word" and y::"'a::len word"
-  shows "NO_MATCH cvc_a (undefined x y) \<Longrightarrow> (x_c3::'b::len word) = Word.Word (1::int) \<and>
-   int (size x_c3) = (1::int) \<and>
-   int (size x) - (1::int)
-   < int (size ((x_c0::'c::len word) - (x_c1::'c::len word))) \<and>
-   (x_c2::'b::len word) =
-   smt_extract (nat (int (size x) - (1::int)))
-    (nat (int (size x) - (1::int))) (x_c0 - x_c1) \<and>
-   int (size x_c2) =
-   (1::int) + (int (size x) - (1::int) - (int (size x) - (1::int))) \<and>
-   int (size x) - (1::int) \<le> int (size x) - (1::int) \<and>
-   (0::int) \<le> int (size x) - (1::int) \<and>
-   x_c1 = Word.cast y \<and>
-   int (size x_c1) = int (size y) + (1::int) \<and>
-   x_c0 = Word.cast x \<and>
-   int (size x_c0) = int (size x) + (1::int) \<and>
-   (0::int) \<le> (1::int) \<longrightarrow>
-   smt_usubo (TYPE('b::len)) x y = (x_c2 = x_c3)"
-  apply (rule impI)
-  unfolding smt_usubo_def
-  apply simp
-  apply (cases "LENGTH('b) = 1")
-  apply simp_all
-  oops
-
 
 lemma rewrite_bv_ite_equal_children_lemma:
   fixes c::"1 word" and x::"'a::len word"
@@ -603,6 +576,18 @@ lemma rewrite_bv_lshr_by_const_0_lemma:
   apply rule+
   apply (elim conjE)
   by simp
+
+lemma rewrite_bv_ashr_by_const_0_lemma:
+  fixes x::"'a::len word" and sz::"int"
+  shows "NO_MATCH cvc_a (undefined x sz) \<Longrightarrow> (x_c2::'a::len word) =
+   signed_drop_bit (unat (x_c0::'b::len word))
+    (x_c1::'a::len word) \<and>
+   int (size x_c2) = int (size x_c1) \<and>
+   x_c1 = x \<and>
+   int (size x_c0) = int (size x_c1) \<and>
+   x_c0 = Word.Word (0::int) \<and> int (size x_c0) = sz \<longrightarrow>
+   x_c2 = x"
+  by auto
 
 lemma rewrite_bv_shl_by_const_11:
   fixes x::"'a::len word" and amount::"int" and sz::"int"
@@ -990,43 +975,6 @@ lemma rewrite_bv_merge_sign_extend_1_lemma:
   apply (subst scast_up_scast[of x])
    apply simp_all
   by (simp add: is_up.rep_eq size_word.rep_eq)
-
-
-
-lemma rewrite_bv_extract_not_lemma:
-  fixes x::"'a::len word" and i::"int" and j::"int"
-  shows "NO_MATCH cvc_a (undefined x i j) \<Longrightarrow> j < int (size x) \<and>
-   (x_c1::'b::len word) = smt_extract (nat j) (nat i) x \<and>
-   int (size x_c1) = (1::int) + (j - i) \<and>
-   j < int (size (not x)) \<and>
-   (x_c0::'b::len word) = smt_extract (nat j) (nat i) (not x) \<and>
-   int (size x_c0) = (1::int) + (j - i) \<and>
-   i \<le> j \<and> (0::int) \<le> i \<longrightarrow>
-   x_c0 = not x_c1"
-  apply simp
-  apply rule+
-   apply (simp only: word_uint_eq_iff)
-  apply (subst uint_smt_extract)
-     apply simp_all
-  using nat_mono apply blast
-  apply (meson nat_less_iff order_trans)
-  apply (metis Suc_diff_le Suc_nat_eq_nat_zadd1 diff_ge_0_iff_ge nat_diff_distrib nat_int nat_mono word_size)
-  apply (subst unsigned_not_eq)
-  apply (subst unsigned_not_eq)
-  apply (subst uint_smt_extract)
-  using nat_mono apply presburger
-     apply (metis nat_int word_size_gt_0 zless_nat_conj)
-     apply (metis Suc_diff_le Suc_eq_plus1 Suc_nat_eq_nat_zadd1 diff_ge_0_iff_ge nat_diff_distrib nat_int nat_mono word_size)
-  apply (subst take_bit_take_bit)
-  apply (subst (2) drop_bit_take_bit)
-  using bin_trunc_not[of "LENGTH('b)"]
-  apply (elim conjE)
-  apply (simp add: drop_bit_take_bit)
-  unfolding min_def
-  apply simp
-  apply (cases "Suc (nat j) \<le> LENGTH('a)")
-   apply (simp add: take_bit_not_take_bit)
-  sorry
 
 lemma rewrite_bv_neg_mult_lemma:
   fixes xs::"'a::len word" and ys::"'a::len word" and n::"int" and m::"int"

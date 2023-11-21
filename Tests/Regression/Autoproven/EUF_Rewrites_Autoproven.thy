@@ -87,7 +87,7 @@ lemma [rewrite_bool_or_true]:
   apply (cases xs)
   subgoal for yss xss 
     apply (simp only: cvc_list_left_transfer cvc_list_right_transfer_op cvc_list_both_transfer_op)
-    by (simp_all only: bool_or_true_lemma)
+    by auto
   done
 
 

@@ -33,8 +33,6 @@
 
 (define-rule bv-zero-extend-eliminate ((x ?BitVec) (n Int)) (zero_extend n x) (concat (bv 0 n) x))
 
-(define-rule bv-sdivo-eliminate ((x ?BitVec) (y ?BitVec)) (bvsdivo x y) (and (= x (concat (bv 1 1) (bv 0 (- (bvsize x) 1)))) (= y (bvnot (bv 0 (bvsize y)))) ))
-
 ; -- Simplification Rules --
 
 (define-rule bv-ite-equal-children ((c (_ BitVec 1)) (x ?BitVec)) (bvite c x x) x)
@@ -49,8 +47,8 @@
 
 
 (define-rule bv-shl-by-const-0 ((x ?BitVec) (sz Int)) (bvshl x (bv 0 sz)) x)
-
-
+(define-rule bv-lshr-by-const-0 ((x ?BitVec) (sz Int)) (bvlshr x (bv 0 sz)) x)
+(define-rule bv-ashr-by-const-0 ((x ?BitVec) (sz Int)) (bvashr x (bv 0 sz)) x)
 
 (define-rule bv-bitwise-idemp-1 ((x ?BitVec)) (bvand x x) x)
 (define-rule bv-bitwise-idemp-2 ((x ?BitVec)) (bvor x x) x)
@@ -104,7 +102,6 @@
 (define-rule bv-merge-sign-extend-1 ((x ?BitVec) (i Int) (j Int)) (sign_extend i (sign_extend j x)) (sign_extend (+ i j) x) )
 
 ; -- Normalization Rules --
-(define-rule bv-extract-not ((x ?BitVec) (i Int) (j Int)) (extract j i (bvnot x)) (bvnot (extract j i x)))
 
 (define-rule bv-mult-distrib-const-neg ((x ?BitVec) (n Int) (m Int)) (bvmul (bvneg x) (bv n m)) (bvmul x (bv (- n) m)))
 

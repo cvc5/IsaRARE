@@ -392,7 +392,7 @@ lemma [rewrite_bv_zero_extend_eliminate]:
   apply (simp add: NO_MATCH_def)
  apply force
    apply auto?
-  done
+ done
 
 named_theorems rewrite_bv_ite_equal_children \<open>automatically_generated\<close>
 
@@ -535,7 +535,6 @@ lemma [rewrite_bv_shl_by_const_0]:
    apply auto?
  done
 
-
 named_theorems rewrite_bv_lshr_by_const_0 \<open>automatically_generated\<close>
 
 lemma [rewrite_bv_lshr_by_const_0]:
@@ -549,6 +548,25 @@ lemma [rewrite_bv_lshr_by_const_0]:
    x_c2 = x"
     apply ((rule impI)+)? 
  apply (subst rewrite_bv_lshr_by_const_0_lemma[of cvc_a x sz ]) 
+  apply (simp add: NO_MATCH_def)
+ apply force
+   apply auto?
+ done
+
+named_theorems rewrite_bv_ashr_by_const_0 \<open>automatically_generated\<close>
+
+lemma [rewrite_bv_ashr_by_const_0]:
+  fixes x::"'a::len word" and sz::"int"
+  shows "NO_MATCH cvc_a (undefined x sz) \<Longrightarrow> (x_c2::'a::len word) =
+   signed_drop_bit (unat (x_c0::'b::len word))
+    (x_c1::'a::len word) \<and>
+   int (size x_c2) = int (size x_c1) \<and>
+   x_c1 = x \<and>
+   int (size x_c0) = int (size x_c1) \<and>
+   x_c0 = Word.Word (0::int) \<and> int (size x_c0) = sz \<longrightarrow>
+   x_c2 = x"
+    apply ((rule impI)+)? 
+ apply (subst rewrite_bv_ashr_by_const_0_lemma[of cvc_a x sz ]) 
   apply (simp add: NO_MATCH_def)
  apply force
    apply auto?
@@ -967,25 +985,6 @@ lemma [rewrite_bv_merge_sign_extend_1]:
    x_c1 = x_c2"
     apply ((rule impI)+)? 
  apply (subst rewrite_bv_merge_sign_extend_1_lemma[of cvc_a x i j ]) 
-  apply (simp add: NO_MATCH_def)
- apply force
-   apply auto?
- done
-
-named_theorems rewrite_bv_extract_not \<open>automatically_generated\<close>
-
-lemma [rewrite_bv_extract_not]:
-  fixes x::"'a::len word" and i::"int" and j::"int"
-  shows "NO_MATCH cvc_a (undefined x i j) \<Longrightarrow> j < int (size x) \<and>
-   (x_c1::'b::len word) = smt_extract (nat j) (nat i) x \<and>
-   int (size x_c1) = (1::int) + (j - i) \<and>
-   j < int (size (not x)) \<and>
-   (x_c0::'b::len word) = smt_extract (nat j) (nat i) (not x) \<and>
-   int (size x_c0) = (1::int) + (j - i) \<and>
-   i \<le> j \<and> (0::int) \<le> i \<longrightarrow>
-   x_c0 = not x_c1"
-    apply ((rule impI)+)? 
- apply (subst rewrite_bv_extract_not_lemma[of cvc_a x i j ]) 
   apply (simp add: NO_MATCH_def)
  apply force
    apply auto?
