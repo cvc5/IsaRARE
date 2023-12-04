@@ -91,7 +91,7 @@ declare [[ML_print_depth=10000]]
 
 section \<open>Test\<close>
 
-(*parse_rare_file "$IsaRARE_HOME/Tests/mixed_rewrites" "" "Mixed_Rewrites"*)
+parse_rare_file "~/Sources/IsaRARE/Tests/mixed_rewrites" "" "Mixed_Rewrites"
 
 (*TODO: Documentation adding new operators to parser*)
 
