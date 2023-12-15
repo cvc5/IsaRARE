@@ -137,7 +137,6 @@ section \<open>Test\<close>
 
 parse_rare_file "IsaRARE/Tests/mixed_rewrites" "" "Mixed_Rewrites"
 
-
 section \<open>Expansions (Experts) \<close>
 
 (*TODO: Documentation adding new operators to parser*)
