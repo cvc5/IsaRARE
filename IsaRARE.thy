@@ -81,17 +81,26 @@ declare[[IsaRARE_verbose = true]] (*Get additional information*)
 declare[[IsaRARE_debug = true]] (*Get debugging information*)
 declare[[IsaRARE_implAssump = true]] (*Turn implicit assumption generation on or off (Warning this is an expert option: Lemmas might not be provable without the assumptions) *)
 declare[[IsaRARE_listsAsVar = false]] (*When turned on list parameters are parsed as if they were variables (Warning this is an expert option: Lemmas might be proven but corresponding RARE rule is not correct) *)
-declare[[IsaRARE_proofStrategy = "Full"]] (*Turn on specific strategies for proof printed, e.g. strings*)
+declare[[IsaRARE_proofStrategy = "Minimum"]] (*Turn on specific strategies for proof printed, e.g. strings*)
 declare [[ML_print_depth=10000]]
-
-
-(*Test*)
-(*TODO: Get current directory*)
-
 
 section \<open>Test\<close>
 
-parse_rare_file "~/Sources/IsaRARE/Tests/mixed_rewrites" "" "Mixed_Rewrites"
+parse_rare_file "IsaRARE/Tests/mixed_rewrites" "" "Mixed_Rewrites"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (*TODO: Documentation adding new operators to parser*)
 

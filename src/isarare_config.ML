@@ -17,6 +17,7 @@ sig
   val listsAsVar: bool Config.T
   val proofStrategy: string Config.T
   val proofStrategyTheory: string Config.T
+  val IsaRAREHome: string Config.T
 
   (*Diagnostics*)
   val verbose_msg: Proof.context -> ('a -> string) -> 'a -> unit
@@ -40,6 +41,7 @@ val implAssump = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_implAssump\<
 val listsAsVar = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_listsAsVar\<close> (K false)
 val proofStrategy = Attrib.setup_config_string \<^binding>\<open>IsaRARE_proofStrategy\<close> (K "Full")
 val proofStrategyTheory = Attrib.setup_config_string \<^binding>\<open>IsaRARE_proofStrategyTheory\<close> (K "All")
+val IsaRAREHome = Attrib.setup_config_string \<^binding>\<open>IsaRAREHome\<close> (K "~/Sources/")
 
 val str_to_proof_strategy = [("None",None),("Minimum",Minimum),("Full", Full),("TACAS_Autoprove",TACAS_Autoprove)]
 val str_to_proof_strategy_theory = [("All",All),("Strings",Strings),("Arith",Arith),("BV",BV)]
