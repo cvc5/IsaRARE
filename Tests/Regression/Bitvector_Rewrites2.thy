@@ -61,7 +61,7 @@ lemma rewrite_bv_concat_flatten_lemma:
         apply (simp add: push_bit_add push_bit_push_bit word_size)
         by (metis add.commute p(7) word_size)
       subgoal
-      apply (simp only: word_unat_eq_iff)
+        apply (simp only: word_unat_eq_iff)
         apply (subst unat_word_cat)
         apply (metis p(14,27) size_word.rep_eq)
         apply (subst unat_word_cat)
