@@ -1,7 +1,7 @@
 session "IsaRARE" (main) = "HOL-CVC" +
  description
   "IsaRARE transforms rewrite rules in the RARE language into Isabelle lemmas"
- options [document = pdf, document_output = "output",quick_and_dirty]
+ options [document = pdf, document_output = "docs", quick_and_dirty]
  sessions
   "HOL-Library"
   "Word_Lib"
