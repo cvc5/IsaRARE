@@ -1,0 +1,9 @@
+session "Manual" = "HOL-CVC" +
+ options [document = pdf, document_output = "docs", quick_and_dirty]
+ theories
+  "Manual"
+  "Config"
+  "Parsing"
+ document_files
+  "root.tex"
+
