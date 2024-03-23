@@ -43,7 +43,7 @@ sig
     rule_type : rule_type,
     rule_name : string,
     params : par list,
-    let_defs : SMTLIB.tree list option,
+    let_defs : (SMTLIB.tree * SMTLIB.tree) list option,
     precondition : SMTLIB.tree option,
     match : SMTLIB.tree,
     target : SMTLIB.tree,
@@ -73,7 +73,7 @@ type rewrite_rule =
   rule_type : rule_type,
   rule_name : string,
   params : par list,
-  let_defs : SMTLIB.tree list option,
+  let_defs : (SMTLIB.tree * SMTLIB.tree) list option,
   precondition : SMTLIB.tree option,
   match : SMTLIB.tree,
   target : SMTLIB.tree,
@@ -90,6 +90,8 @@ fun str_of_type DEFINE_RULE = "define-rule" |
 fun str_of_par (Par t) = "(" ^ SMTLIB.str_of t ^ ")" |
     str_of_par (ListPar t) = "(" ^ SMTLIB.str_of t ^ " :list)"
 
+fun str_of_lets xs = "(def" ^ String.concat (map (fn (v,t) => " (" ^ SMTLIB.str_of v ^ " " ^ SMTLIB.str_of t ^ ")") xs) ^ ")"
+
 fun pretty_rewrite_rule (rule : rewrite_rule) = 
  [
   #rule_type rule |> str_of_type |> Pretty.str,
@@ -97,7 +99,7 @@ fun pretty_rewrite_rule (rule : rewrite_rule) =
   #params rule |> map str_of_par |> map Pretty.str |> Pretty.separate "" |> Pretty.enclose "" ""
  ]
  @ (if Option.isSome (#let_defs rule)
-    then [ ["def" |> Pretty.str] @ map SMTLIB.pretty_tree (Option.valOf (#let_defs rule)) |> Pretty.separate "" |> Pretty.enclose "(" ")"] 
+    then [ str_of_lets (Option.valOf (#let_defs rule))|> Pretty.str ] 
     else [])
  @ (if Option.isSome (#precondition rule)
     then [ map SMTLIB.pretty_tree [(Option.valOf (#precondition rule))] |> Pretty.separate " " |> Pretty.enclose "(" ")"] 
@@ -116,19 +118,18 @@ val str_of = Pretty.unformatted_string_of o pretty_rewrite_rule
 (* General Util *)
 
 (*
-Parses the next token from a list of string characters,
-starting with an opening parenthesis until the matching closing parenthesis.
-However, expressions can also be single strings, so in case the first character is not an opening
-parenthesis it returns everything until the first white space or closing parenthesis.
+ Parses the next token from a list of string characters,  either starting with an opening
+ parenthesis until the matching closing parenthesis or if the first character is not an opening
+ parenthesis it returns everything until the first white space or closing parenthesis.
 
-E.g., parse_token NONE "((s1 ?) (s2 ? :list) (m Int))"
-is Finished (((s1 ?) (s2 ? :list) (m Int)),"")
+ E.g., parse_token NONE "((s1 ?) (s2 ? :list) (m Int))"
+ is Finished (((s1 ?) (s2 ? :list) (m Int)),"")
 
-I.e. parse_token NONE "(s1 ?) (s2 ? :list) (n Int) (m Int)"
-is Finished ((s1 ?)," (s2 ? :list) (n Int) (m Int)")
+ I.e. parse_token NONE "(s1 ?) (s2 ? :list) (n Int) (m Int)"
+ is Finished ((s1 ?)," (s2 ? :list) (n Int) (m Int)")
 
-If the string s does not contain the final closing parenthesis Unfinished(s,i) is returned where
-i is the number of unclosed parenthesis in s.
+ If the string s does not contain the final closing parenthesis Unfinished(s,i) is returned where
+ i is the number of unclosed parenthesis in s.
 *)
 
 datatype token = None | Unfinished of string list * int | Finished of string list * string list
@@ -148,8 +149,8 @@ fun parse_token s [] = s |
 
 (* Lexer Util *)
 
-fun debug_msg_lexer ctxt msg =
-  (IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print> ("Lexer: " ^ msg)))
+fun debug_msg_lexer ctxt l msg =
+  (IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print> ("Lexer in line " ^ Int.toString(l) ^ ": " ^ msg)))
 fun verbose_msg_lexer ctxt msg =
   (IsaRARE_Config.verbose_msg ctxt (fn () => \<^print> ("Lexer: " ^ msg)))
 
@@ -165,10 +166,11 @@ let
   val trimmed_lines = raw_explode line |> Library.trim (curry (op =) " ")
 in
   case trimmed_lines of
-    [] => (debug_msg_lexer ctxt ("found empty line " ^ Int.toString(l) ^ ", skip"); uf) |
-    (";"::_) => (debug_msg_lexer ctxt "Lexer found comment, skip entire line"; uf) |
+    [] => (debug_msg_lexer ctxt l ("found empty line , skip"); uf) |
+    (";"::_) => (debug_msg_lexer ctxt l "Lexer found comment, skip entire line"; uf) |
     _ => 
       let
+        val _ = debug_msg_lexer ctxt l ("found non empty line, start parsing rule");
         (* If line has a comment in it cut it *)
         val sanitized_lines =
           Library.take (Library.find_index (curry (op =) ";") trimmed_lines) trimmed_lines  |> Library.trim (curry (op =) " ")
@@ -188,7 +190,7 @@ fun lexer _ [] (Unfinished (s,i)) l l_start =
       ^ Int.toString(l_start) ^ ") was not closed. Counted " ^ Int.toString(i)
       ^ " opened but not closed parenthesis far. Part already parsed in: \n"
       ^ (rev s |> String.concat)) |
-  lexer ctxt [] _ _ _ = (debug_msg_lexer ctxt "Finished lexing file";[]) |
+  lexer ctxt [] _ l _ = (debug_msg_lexer ctxt l "Finished lexing file";[]) |
   lexer ctxt (line::lines) uf l l_start =
     case lexer_add_line ctxt l line uf of
       Finished (s,[]) => (l_start,String.concat s) :: lexer ctxt lines None (l+1) (l+1) |
@@ -213,10 +215,10 @@ fun get_smtlib_term l t = SMTLIB.parse t
 
 fun parse_next_term l cs =
 let
-  val token = parse_token None cs
+  val token =  (parse_token None cs)
     handle
+      (Fail _) => Scan.fail cs |
       (TOKEN msg) => raise_parser_error l msg
-  val _ = @{print}("token",token)
 in
  case token of
    None => (Scan.fail cs) |
@@ -260,7 +262,7 @@ fun alf_type_parser _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"a"::"x"::"i"::"
     (ALF_AXIOM,cs) |
   alf_type_parser _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"r"::"u"::"l"::"e":: cs)) =
     (ALF_RULE,cs) |
-  alf_type_parser l _ = raise_parser_error l "Could not read type!"
+  alf_type_parser l _ = raise_parser_error l "Could not read type of alf rule!"
 
 (* Rule name *)
 
@@ -282,7 +284,7 @@ parameter are a list of SMT-LIB terms in parenthesis, the single parameters
 are separated by a single whitespace from each other. Parameters can have
 attributes starting with a colon. For now only the attribute is :list.
 *)
-fun parse_par l (par:string) = (@{print}("par",par);
+fun parse_par l (par:string) = (
 case String.tokens (curry (op =) #":") par of
   [_] => (Par (get_smtlib_term l [par])) |
   [x,y] => if String.isPrefix "list" y
@@ -291,55 +293,81 @@ case String.tokens (curry (op =) #":") par of
            else raise_parser_error l "parameter has unknown attribute" |
   _ => raise_parser_error l "parameter has too many attributes")
 
-fun par_parser l = parse_next_term l >> implode >> parse_par l
+fun par_parser l = (parse_next_term l >> implode) :|-- (fn s => fn cs => if s<>"" then ((parse_par l s),cs) else Scan.fail cs)
 
 fun param_parser l =
   expect_char l "Could not find first opening parentheses in parameter list" "(" 
- |-- (Scan.repeat (par_parser l --| (Scan.many1 (curry (op =) " ")))
-   @@@ (Scan.option (par_parser l) >> (fn NONE => [] | SOME xs => [xs])))
- :|-- (fn t => fn cs => ((@{print} ("Parse "  ^ ",remaining: " ^ implode cs );(t,cs))))
+  --| (Scan.many (curry (op =) " "))
+  |-- (Scan.repeat (par_parser l --| (Scan.many1 (curry (op =) " ")))
+      @@@ (Scan.option (par_parser l) >> (fn NONE => [] | SOME xs => [xs])))
  --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
 
+(* Let definitions *)
+
+fun let_parser l (cs : string list) = (@{print}("let",cs);
+  cs |> 
+  Scan.catch(
+  (Scan.many1 (curry (op =) " "))
+  --| (Scan.one (curry (op =) "("))
+  -- Scan.many (curry (op =) " ")
+  --| Scan.one (curry (op =) "d")
+  --| Scan.one (curry (op =) "e")
+  --| Scan.one (curry (op =) "f")
+  --| Scan.many1 (curry (op =) " ")
+  |-- (Scan.repeat ((
+        (Scan.one (curry (op =) "("))
+        |-- parse_next_term l
+        --| (Scan.many1 (curry (op =) " "))
+        -- parse_next_term l
+        --| (Scan.many (curry (op =) " "))
+        --| (Scan.one (curry (op =) ")"))
+        --| (Scan.many (curry (op =) " "))
+      )
+      >> (fn (v,t) => (get_smtlib_term l v,get_smtlib_term l t))
+      ))
+  --| Scan.many (curry (op =) " ")
+  --| Scan.one (curry (op =) ")"))
+  >> Option.SOME
+  handle
+    (Fail _) => (NONE,cs)
+)
 (* Expressions *)
 
 (* In RARE expressions might not be in parenthesis if they are a single sequence, so we have to need
 parenthesis in front of these*)
 fun expression_parser l = parse_next_term l >> implode >> Library.single >> get_smtlib_term l
 
-fun let_parser l cs = (( DEFINE_RULE),cs)
 
-fun debug_msg ctxt msg =
-(fn t => fn cs => ((debug_msg_parser ctxt ("Parse " ^ msg ^ ",remaining: " ^ implode cs );(t,cs))))
-
-fun parse_fixed_point (l,cs) = l
-
-
-fun parse_all ctxt (l,cs) =
+fun parse_single_rule ctxt (l,cs) =
 let
-  val (((((_,rtyp),rname),rparams),rexpressions),cs')
+  
+  fun debug_msg ctxt msg f (x,t) cs =
+  ((debug_msg_parser ctxt ("Parsed " ^ msg ^ ". Token parsed in is: " ^  f t );((x,t),cs)))
+
+  val ((((((_,rtyp),rname),rparams),rlet),rexpressions),cs')
     = cs
       |>
-      Scan.succeed (debug_msg_parser ctxt "Start parsing rule in line")
+      Scan.succeed (debug_msg_parser ctxt ("Start parsing rule in line " ^ Int.toString(l) ))
       --| (Scan.one (fn c => c = "("))
       -- ignore_chars l " "
       -- type_parser l
-      :|-- debug_msg ctxt "type"
-      --| least_one_char l "" " "
+      :|-- debug_msg ctxt "type" str_of_type
+      --| least_one_char l "No whitespace after type found." " "
       -- name_parser l
-      :|-- debug_msg ctxt "name"
-      --| least_one_char l "" " "
+      :|-- debug_msg ctxt "name" I
+      --| least_one_char l "No whitespace after name found." " "
       --  param_parser l
-      :|-- debug_msg ctxt "parameter"
-      -- Scan.repeat 
+      :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map str_of_par xs))
+      -- let_parser l
+      :|-- debug_msg ctxt "possible let defs" (fn (SOME xs) => str_of_lets xs | NONE => "")
+      -- Scan.repeat
         ((Scan.many1 (curry (op =) " "))
-        |-- (expression_parser l) 
-        :|-- debug_msg ctxt "expression")
+        |-- (expression_parser l))
+      :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| ignore_chars l " "
       --| (Scan.one (fn c => c = ")"))
-
-     (* --  Scan.option (let_parser l)
-      --| Scan.succeed (debug_msg_parser ctxt "Parsed lets")*)
-  val _ = @{print}("rexpressions",rexpressions)
+      --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")
+ 
   fun seperate_expr DEFINE_RULE [m,t] = (NONE,m,t,NONE) |
       seperate_expr DEFINE_COND_RULE [p,m,t] = (SOME p,m,t,NONE) |
       seperate_expr DEFINE_RULE_STAR [m,t] = (NONE,m,t,NONE) |
@@ -355,7 +383,7 @@ in
     rule_type = rtyp,
     rule_name = rname,
     params= rparams,
-    let_defs = NONE,
+    let_defs = rlet,
     precondition = rprecondition,
     match = rmatch,
     target = rtarget,
@@ -364,290 +392,93 @@ in
 
 end
 
-fun parse_rewrites ctxt xs = map (parse_all ctxt) (map (fn (i,x) => (i,raw_explode x) ) xs)
 
-(*
-(* Component Parser *)
-(* Input: Current line number and rest of input string *)
-(* Output: NONE if component was not found, 
-          SOME if component was found (the line after parsing component,
-                                       parsed component (if exists),
-                                       and rest of string without component *)
 
-type single_comp_parser = int * string list -> (rewrite_tree option * (int * string list)) option
 
-type total_comp_parser = int * string list -> (rewrite_tree option * (int * string list))
+fun parse_single_alf_rule ctxt (l,cs) =
+let
+  
+  fun debug_msg ctxt msg f (x,t) cs =
+  ((debug_msg_parser ctxt ("Parsed " ^ msg ^ ". Token parsed in is: " ^  f t );((x,t),cs)))
 
-fun optional (cp : single_comp_parser) : total_comp_parser = 
-(fn x =>
- case cp x of
-  NONE => (NONE,x) |
-  SOME (t,x') => (t,x'))
-
-fun mandatory (cp : single_comp_parser) : total_comp_parser = 
-(fn (i,cs) =>
- case cp (i,cs) of
-  NONE => raise_parser_error i "Problem in parser, could not find mandatory component!" |
-  SOME (t,(i',cs')) => (t,(i',cs'))
+  val (((((_,alfT),rname),rparams),rexpressions),cs')
+    = cs
+      |>
+      Scan.succeed (debug_msg_parser ctxt ("Start parsing rule in line " ^ Int.toString(l) ))
+      --| (Scan.one (fn c => c = "("))
+      --| ignore_chars l " "
+      -- alf_type_parser l
+      --| least_one_char l "No whitespace after type found." " "
+      -- name_parser l
+      :|-- debug_msg ctxt "name" I
+      --| least_one_char l "No whitespace after name found." " "
+      --  param_parser l
+      :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map str_of_par xs))
+      -- Scan.repeat
+        ((Scan.many1 (curry (op =) " "))
+        |-- (expression_parser l))
+      :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
+      --| ignore_chars l " "
+      --| (Scan.one (fn c => c = ")"))
+      --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")
+ (*
+(declare-axiom bool-or-false ((xs Bool :list) (ys Bool :list))
+  (= (or xs false ys) (or xs ys))
+  :rare-fixed-point
 )
 
-type comp_parser = rewrite_tree list * (int * string list) -> rewrite_tree list * (int * string list)
+(declare-rule bool-or-false ((xs Bool :list) (ys Bool :list))
+  :conclusion (= (or xs false ys) (or xs ys))
+  :rare-fixed-point
+)
 
-fun repeat_comp_parser (cp:single_comp_parser) (ts,(i,cs)) =
- case cp (i,cs) of
-  NONE => (ts,(i,cs)) |
-  SOME (NONE,(i',cs')) => repeat_comp_parser cp (ts,(i',cs')) |
-  SOME (SOME t,(i',cs')) => repeat_comp_parser cp ((t::ts),(i',cs'))
+(declare-rule false_elim ((F Bool))
+    :premises ((= F false))
+    :conclusion (not F)
+)
+*)
+val _ = @{print}("af",alfT)
+  fun seperate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "conclusion")::[c]) = (DEFINE_COND_RULE,SOME p,c) |
+      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c,SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) | (*TODO: Ask Andy does this has the context expr as argument? Or do thy not exist anymore?*)
+      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c]) = (DEFINE_RULE,NONE,c) |
+      seperate_expr_rule xs =(@{print}("xs",xs);
+        raise_parser_error l ("Found "
+        ^ Int.toString(length xs) ^ " expressions in rule but expected less or more than that."))
 
-fun next_comp cp (t,(i,cs)) =
-  cp (i,cs) |>> (fn t' => (if Option.isSome t' then Option.valOf t' :: t  else t))
-
-(* Util component parsers *)
-
-fun skip_to_eol (l,[]) = (SOME (NONE,(l,[]))) |
-    skip_to_eol (l,("\\"::"n"::cs)) = (SOME (NONE,(l+1,cs))) |
-    skip_to_eol (l,(_::cs)) = skip_to_eol (l,cs)
-
-fun skip_comment (_,[]) = NONE |
-    skip_comment (l,(";"::cs)) = skip_to_eol (l,cs) |
-    skip_comment (_,_) = NONE 
-
-fun skip_token c (l,[]) = NONE |
-    skip_token c (l,(c'::cs)) = if c = c' then SOME(NONE,(l,cs)) else NONE
-
-fun expect_token c (l,[])
-      = raise PARSE("Expected character " ^ c  ^ "but reached end of file") |
-    expect_token c (l,(c'::cs)) =
-      if c = c'
-      then SOME(NONE,(l,cs))
-      else raise PARSE( "Expected character " ^ c ^ " but found " ^ c')
+  fun seperate_expr_axiom (c::[SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) |
+      seperate_expr_axiom [c] = (DEFINE_RULE,NONE,c) |
+      seperate_expr_axiom xs = (@{print}("xs",xs);
+        raise_parser_error l ("Found "
+        ^ Int.toString(length xs) ^ " expressions in axiom but expected less or more than that."))
 
 
-fun consume_token c (l,[]) = NONE |
-    consume_token c (l,(c'::cs)) =
-      if c = c'
-      then SOME(NONE,(l,cs))
-      else NONE
-      
-val comment_parser : comp_parser = repeat_comp_parser skip_comment
+  val (rtyp,rprecondition,conclusion) = rexpressions |> (if alfT = ALF_RULE then seperate_expr_rule else seperate_expr_axiom)
+val _ = @{print}("rtyp",rtyp)
+val _ = @{print}("conclusion",conclusion)
 
-fun skip_chars_parser c = skip_token c |> repeat_comp_parser 
-
-fun debug_parser message ctxt (ts,(i,cs)) = (IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  (message ^ "\nIn line: ", i));NONE)
-
-
-(* RARE component parsers *)
-
-(*Parse nested term*)
-
-
-
-(*
-fun parse_nested_term  = 
-
-fun parse_smt_lib_tree = 
-
-
-(*(t ?Array)*)
-fun parse_param (i,cs) =
-let
-  val (t,(i,cs)) = consume_token "(" (i,cs)
-  val (name,(i,cs)) = parse_until " "
-  val (typ,(i,cs)) = parse_smt_lib_tree
-list
-  val (t,(i,cs)) = consume_token ")" (i,cs)
-
+  val (rmatch,rtarget) = (fn (SMTLIB.S [SMTLIB.Sym "=", x,y]) => (x,y) | _ => raise_parser_error l "" ) conclusion
 in 
-""
+
+({
+    rule_type = rtyp,
+    rule_name = rname,
+    params= rparams,
+    let_defs = NONE,
+    precondition = rprecondition,
+    match = rmatch,
+    target = rtarget,
+    context_expr = NONE
+  } : rewrite_rule)
+
 end
 
-fun parse_params (t,(i,cs)) =
-let
-  val (ts,(i',cs')) = repeat_comp_parser parse_param ([],(i,cs))
 
-*)
-(*
-   type  (char, string) reader = string -> (char * string) option    
-
-    val skipWS : (char, string) reader -> string -> string
-
-*)
-
-
-
-
-
-*)
-
-
-
-
-
-(*
-
-
-
-(*
- Lemma names in Isabelle cannot have dashes in them, so they must be replaced by underscores
- when parsing the name of a rewrite
-*)
-fun parse_string l (c :: cs) None error_msg =
-       if Symbol.is_ascii_blank c then parse_string l cs None error_msg (*Ignore leading space*)
-       else parse_string l cs (String c) error_msg | (*Start of a word*)
-    parse_string l (c :: cs) (String s) error_msg =
-       if Symbol.is_ascii_blank c then (cs, s) (*End of a word*)
-       else if c = "-" then parse_string l cs (String (s ^ "_")) error_msg (*Replace - in name by _ *)
-       else parse_string l cs (String (s ^ c)) error_msg | (*Word continues*)
-    parse_string l _ _  error_msg = raise PARSE (l, error_msg)
-
-(*
- A parameter has to be of the form <symbol> <sort> <attr>*
- The symbol and the sort need to be parsed in. If the attribute is :list, the type of the 
- parameter still needs to be whatever type the elements of this list have.  
-*)
-local
-
- (*TODO: THERE CAN BE NESTED PARENTHESIS (c (_ BitVec 1))*)
-  fun parse_par_type (":"::cs) typ _ l = parse_par_type cs typ true l
-    | parse_par_type (")"::cs) typ is_list _ = (cs, typ, is_list)
-    (*| parse_par_type (" "::cs) typ is_list l = parse_par_type cs typ is_list l*) (*TODO*)
-    | parse_par_type (_::cs) typ true l = parse_par_type cs typ true l
-    | parse_par_type (c::cs) typ false l = parse_par_type cs (typ^c) false l
-    | parse_par_type _ _ _ l = raise PARSE (l, "parameter is not well-formed.")
-
-in
-  fun parse_pars ("("::")"::cs) None _ _ = (cs,[],[]) (*Par list is empty*)
- | parse_pars ("("::cs) None [] l = parse_pars cs (TreeList []) [] l (*Very first opening parenthesis*) 
- | parse_pars ("("::cs) (TreeList xs) list_pars l =
-    let
-      val (cs',par_name) = parse_string l cs None "Pareter name could not be parsed in"
-      (*TODO: This is a hotfix for nested parenthesis*)
-      val (cs'',par_type,is_list) = if hd cs' = "(" then parse_par_type (tl cs') "" false l else parse_par_type cs' "" false l
-      val cs'' = if hd cs' = "(" then tl cs'' else cs''
-      val par_type = if hd cs' = "(" then "("^par_type^")" else par_type
-      val par = SMTLIB.parse ["("^par_name^" " ^ par_type^")"]
-      val new_list_pars = (if is_list then par::list_pars else list_pars)
-    in parse_pars cs'' (TreeList (par::xs)) new_list_pars l end
- | parse_pars (")"::cs) (TreeList xs) list_pars _ = (cs, xs, list_pars) (*Very last closing parenthesis*)
- | parse_pars (" "::cs) (TreeList xs) list_pars l = parse_pars cs (TreeList xs) list_pars l (*Skip spaces between pars*)
- | parse_pars _ _ _ l = raise PARSE (l, "parameter list is not well-formed.")
-end
-
-local 
-  fun read_rule_smtlib_tree _ (match :: [target])
-         = [Match match, Target target] |
-      read_rule_smtlib_tree l _ = raise PARSE (l, "not a valid instance of a define-rule")
-
-  fun read_cond_rule_smtlib_tree _ (precondition :: match :: [target])
-         = [Precondition precondition, Match match, Target target] |
-      read_cond_rule_smtlib_tree l _ = raise PARSE (l, "not a valid instance of a define-cond-rule")
-
-  fun read_star_rule_smtlib_tree _ (match :: [target])
-        = [Context_Expr NONE, Match match, Target target] |
-      read_star_rule_smtlib_tree _ (match :: target :: [context_expr])
-        = (@{print}("target",target);@{print}("match",match);@{print}("context_expr",context_expr);[Context_Expr (SOME context_expr), Match match, Target target]) |
-      read_star_rule_smtlib_tree l _ = raise PARSE (l, "not a valid instance of a define-star-rule")
-
-  fun read_rewrite_name l cs = parse_string l cs None "Rule name could not be parsed in" ||> Rule_Name
-
-  fun parse_rare rule l cs f ctxt = 
-  let
-    val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Parsed rule type:", rule))
-    val (wth_name, name) = read_rewrite_name l cs
-    val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Parsed name:", name))
-    val (wth_par, parsed_par, list_pars) = parse_pars wth_name None [] l
-    val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Parsed parameters:", parsed_par))
-(*TODO: This does not work if a rewrite has a whitespace at the end! Fix split_up below*)
-    val wth_last_parenthesis = take (length wth_par - 1) wth_par
-
-  (*A statement is either in between parenthesis or a single token*)
-    (*Empty strings cannot be parsed in by the SMTLIB parser. For now strings are excluded here*)
-    fun read_token [] token _ = ([],token) |
-        read_token (" "::cs) token _ = (cs,token) |
-        read_token ("\""::"\""::cs) token false = read_token cs (token^"(str.const emptyString)") true | (*TDOO: replace by ''s?*)
-        read_token ("\""::cs) token false = read_token cs (token^"(str.const ") true | (*TDOO: replace by ''s?*)
-        read_token ("\""::cs) token true = read_token cs (token^")") false |
-        read_token (c::cs) token x = read_token cs (token^c) x
-
-    (*TODO: string constants*)
-    (*TODO: Use nested lists instead of counter and then flatten them?*)
-    fun split_up [] _ _ _ = [] |
-        split_up (" "::cs) 0 None str_const = split_up cs 0 None str_const | (*Skip blanks in between expressions*)
-        split_up ("("::cs) 0 None str_const = split_up cs 1 (String "(") str_const | (*Expression starts with a parenthesis*)
-        split_up ("("::cs) i (String str) str_const = split_up cs (i+1) (String (str ^ "(")) str_const | (*Expression starts with a parenthesis*)
-        split_up (c::cs) 0 None str_const =
-          let 
-            val (new_cs,token) = read_token (c::cs) "" false
-          in 
-            [token]::split_up new_cs 0 None str_const
-          end | (*Expression is a token wth parenthesis*)
-        split_up (")"::cs) 1 (String str) str_const = [str ^ ")"] :: split_up cs 0 None str_const |
-        split_up (")"::cs) i (String str) str_const = split_up cs (i-1) (String (str^")")) str_const |
-        split_up ("\""::"\""::cs) i (String str) false = split_up cs i (String (str^"(str.const)")) false |
-        split_up ("\""::cs) i (String str) false = split_up cs i (String (str^"str.const(")) true |
-        split_up ("\""::cs) i (String str) true = split_up cs i (String (str^")")) false |
-        split_up (c::cs) i (String str) str_const = split_up cs i (String (str^c)) str_const |
-        split_up _ _ _ _ = raise PARSE (l, "rule cannot be parsed in")
-
-(*TODO: string list instead of string list list*)
-
-(* Split up blocks. Then, test if first block is a def block or not *)
-
-  val expr_list = split_up wth_last_parenthesis 0 None false
-  val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Parsed in single components:", expr_list))
-
-  val pot_def_list = implode (hd expr_list)
-
-  val (expr_list, ld) =
-   if String.isPrefix "(def" pot_def_list
-   then
-   let
-     val wth_def = unprefix "(def" pot_def_list (*TODO: Delete last element*)
-     val defs = split_up (fst (split_last (raw_explode wth_def))) 0 None false
-   in (tl expr_list, SOME (map SMTLIB.parse defs)) end
-   else (expr_list, NONE)
-
-   (*Separate components (match, target, condition, context) from each other: *)
-   val expr = f l (map SMTLIB.parse expr_list)
-   val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Parsed rule expression:", expr))
-  in
-    rule :: [name] @ (*[Par (parsed_par,list_pars)] @*) [Let_Defs ld] @ expr
-  end
-
-in 
-  fun parse_according_to_type l ("("::"d"::"e"::"f"::"i"::"n"::"e"::"-"::"r"::"u"::"l"::"e"::" ":: cs)
-        = parse_rare (Rule_Type DEFINE_RULE) l cs read_rule_smtlib_tree | 
-      parse_according_to_type l ("("::"d"::"e"::"f"::"i"::"n"::"e"::"-"::"c"::"o"::"n"::"d"::"-"::"r"::"u"::"l"::"e"::" ":: cs)
-        = parse_rare (Rule_Type DEFINE_COND_RULE) l cs read_cond_rule_smtlib_tree | 
-      parse_according_to_type l ("("::"d"::"e"::"f"::"i"::"n"::"e"::"-"::"r"::"u"::"l"::"e"::"*"::" ":: cs)
-        = parse_rare (Rule_Type DEFINE_RULE_STAR) l cs read_star_rule_smtlib_tree | 
-      parse_according_to_type l _ = raise PARSE (l, "could not read rule type")
-end
-
-(* Overall parser: *)
-fun read_tree l line ctxt
-   = parse_according_to_type l line ctxt |> Rewrite_Rule
-
-fun add_line ctxt line (l, rewrite_trees) =
-  let
-    val _ = IsaRARE_Config.verbose_msg ctxt (fn _ => "parsing line nr. " ^ Int.toString(l) ^ ": " ^ line) []
-    val line_list = (raw_explode line)
-  in
-    if size line = 0 then (IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Found empty line, skip"));(l + 1, rewrite_trees)) (*Skip empty lines*)
-    else if hd line_list = ";"
-    then (IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Found comment, skip"));(l + 1, rewrite_trees)) (*Skip comments*)
-    else
-      let
-        val tree = read_tree l line_list ctxt
-        val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print>  ("Complete parsed tree:", tree))
-      in
-        (l + 1, tree :: rewrite_trees) (*Get rewrite tree for current line and append*)
-      end
-  end
-fun parse_rewrites ctxt lines = (fold (add_line ctxt) lines (1,[])) |> snd |> rev
-
-*)
-(*TEMP: Figure out how to parse this in a string list automatically, seperating at\n *)
-
+fun parse_rewrites ctxt xs =
+   map ((if Config.get ctxt IsaRARE_Config.ruleFormat = "RARE"
+         then parse_single_rule
+         else if Config.get ctxt IsaRARE_Config.ruleFormat = "ALF"
+         then parse_single_alf_rule
+         else raise_parser_error 0 "Unkown proof format set") ctxt)
+   (map (fn (i,x) => (i,raw_explode x)) xs)
 
 end;
