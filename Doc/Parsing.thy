@@ -122,8 +122,8 @@ between all components that we describe in the following:
 \begin{enumerate}
 \item Opening parenthesis
 \item Rule type:
- Simple matching on the prefix of the string list. If it is "(define-rule" we set the type to
- DEFINE_RULE and so on.
+ Simple matching on the prefix of the string list. If it is \lstinline{"(define-rule"} we set the type to
+  \lstinline{DEFINE_RULE} and so on.
 \item Rule name:
  When the name is parsed in dashes are changed to underscores since they are not allowed in Isabelle
  lemma names. 
@@ -138,6 +138,7 @@ between all components that we describe in the following:
  All of them are converted to SMT-LIB. Then, the content of this list of expressions is matched to
  the rule components based on the rule type. E.g., for a define-cond-rule we expect there to be
  exactly three expressions that are in order precondition, match and target.
+\end{enumerate}
 
 \<close>
 
@@ -158,7 +159,7 @@ where
 For RARE rules we use a more restricted grammar though. We don't allow reqs or arguments and only
 allow :premises and not :premise-list. The grammar for ALFRARE is:
 
-begin{lstlisting}[language=rare]
+\begin{lstlisting}[language=rare]
 (declare-rule <symbol> (<typed-param>*) <premises>? :conclusion <term>)
 where
 <premises>      ::= :premises (<term>*)
@@ -255,6 +256,11 @@ val parsed = Parse_RARE.parse_rewrites ctxt lexed
 val _ = @{print}("after parsing ",map Parse_RARE.str_of parsed)
 \<close>
 
+declare[[IsaRARE_ruleFormat = "RARE"]]
+
+ML \<open>
+val ctxt = Context.the_local_context ()
+\<close>
 
 (*
 Testing
