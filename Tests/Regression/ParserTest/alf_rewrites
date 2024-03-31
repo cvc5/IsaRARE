@@ -1,0 +1,10 @@
+(declare-axiom bool-or-false ((xs Bool :list) (ys Bool :list))
+  (= (or xs false ys) (or xs ys))
+  :rare-fixed-point
+)
+
+(declare-rule bool-or-false ((xs Bool :list) (ys Bool :list))
+  :conclusion (= (or xs false ys) (or xs ys))
+  :rare-fixed-point
+)
+

@@ -1,0 +1,69 @@
+(define-rule arith-plus-zero ((t Int :list) (s Int :list)) (+ t 0 s) (+ t s))
+
+; comment
+   ; comment with whitespace before it
+; x[i..j][k..l] = x[i+k..i+l] and 0 + 1 = x!3  comment with non-letter symbols
+
+; commented out rule
+;(define-cond-rule str-eq-len-false ((x String) (y String))
+;  (not (= (str.len x) (str.len y)))
+;  (= x y)
+;  false)
+
+(define-rule arith-elim-uminus ((t Int)) (- t) (* (- 1) t)) ;comment at the end
+
+; fixed-point rule
+(define-rule* bv-extract-extract ((x ?BitVec) (i Int) (j Int) (k Int) (l Int)) (extract l k (extract j i x)) (extract (+ i l) (+ i k) x))
+
+;rule with context
+(define-rule* str-len-concat-rec ((s1 String) (s2 String) (s3 String :list))
+  (str.len (str.++ s1 s2 s3))
+  (str.len (str.++ s2 s3))
+  (+ (str.len s1) _))
+
+; rule with list
+(define-rule* arith-plus-flatten ((xs Int :list) (w Int) (ys Int :list) (zs Int :list)) (+ xs (+ w ys) zs) (+ xs w ys zs))
+
+; rule with list and whitespace
+(define-rule* arith-plus-flatten ((xs Int :list) (w Int) (ys Int :list   ) (zs Int   :list )) (+ xs (+ w ys) zs) (+ xs w ys zs))
+
+
+; rule with linebreaks
+(define-rule arith-mul-one 
+((t Int :list) (s Int :list)) 
+(* t 1 s)
+(* t s)
+)
+   
+; rule with whitespace
+(define-cond-rule bv-extract-concat-2
+  ((x ?BitVec) (xs ?BitVec :list) (y ?BitVec)
+  (i Int) (j Int))
+  (and (< i (bvsize x)) (>= j (bvsize x)))
+  (extract j i (concat xs y x))
+  (concat
+    (extract (- j (bvsize x)) 0 (concat xs y))
+    (extract (- (bvsize x) 1) i x)))   
+   
+; rule with comment in it
+;expression without parentheses
+(define-rule
+  arith-mul-zero
+ ((t Int :list) (s Int :list) ; comment at the end ; comment in comment
+  ) (* t 0 s) 0)
+
+; some whitespace
+
+
+
+
+
+(define-rule arith-refl-leq ((t Int)) (<= t t) 
+;Comment in between
+true)
+
+
+(define-rule rule-without-pars () true true)
+
+
+
