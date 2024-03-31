@@ -1,0 +1,181 @@
+The \dsl language\footnote{\dsl comes from {\sc R}ewrites, {\sc a}utomatically
+{\sc re}constructed.} was introduced by N\"otzli et al.~\cite{notzli2022reconstructing}.
+As part of this work, we have extended the language to be able to
+represent more rewrite rules.  We present the full updated language here and
+summarize the differences with~\cite{notzli2022reconstructing} at the end of the
+section.
+
+A \dsl file contains a list of rules whose syntax is defined by the grammar in Figure \ref{fig:grammar}.
+Expressions use SMT-LIB syntax with a few exceptions.
+These include the use of approximate sorts for parameterized sorts (e.g.,
+arrays and bit-vectors) and the addition of a few extra operators (e.g.,
+\rareInline{bvsize}, described below). \dsl uses SMT-LIB 3
+syntax~\cite{smtlib3}, which is very close to SMT-LIB 2 and mostly differs from
+its predecessor in that it uses higher-order functions for indexed operators. 
+%There are other small syntax changes, for example bit-vector constants now explicitly include their bit-width.
+%I think this is not an SMT-LIB change (yet?), either find other example or leave away -> Asked on zulip and this will not be included in SMT-LIB 3
+
+\begin{figure}[t]
+    \grammarindent0.8in
+    \renewcommand{\ulitleft}{\small \ttfamily \bfseries}
+    \renewcommand{\ulitright}{}
+    \begin{grammar}
+      <rule> ::= "(" "define-rule" <symbol> "(" <par>$^*$ ")" [<defs>] <expr> <expr> ")"
+      \alt "(" "define-rule*" <symbol> "(" <par>$^*$ ")" [<defs>] <expr> <expr> [<expr>] ")"
+      \alt "(" "define-cond-rule" <symbol> "(" <par>$^*$ ")" [<defs>] <expr> <expr> <expr> ")"
+
+      <par> ::= <symbol> <sort> [":list"]
+
+      <sort> ::= <symbol> | "?" | "?"<symbol> | "(" <symbol> <numeral>$^+$ ")"
+
+      <expr> ::= <const> | <id> | "(" <id> <expr>$^+$")"
+
+      <id> ::= <symbol> | "(" <symbol> <numeral>$^+$ ")"
+
+      <binding> ::= "(" <symbol> <expr> ")"
+
+      <defs> ::= "(" "def" <binding>$^+$ ")"
+    \end{grammar}
+
+    \caption{Overview of the grammar of \dsl.}
+    \label{fig:grammar}
+\end{figure}
+
+We say that an expression $e$ \emph{matches}
+a match expression $m$ if there is some \emph{matching substitution} $\sigma$
+that replaces each variable in $m$ by a term of the same sort to obtain $e$ 
+(i.e., $m\sigma$ is syntactically identical to $e$).
+For example, the expression \rareInline{(or (bvugt x1 x2) (= x2 x3))},
+with variables \rareInline{x1}, \rareInline{x2}, \rareInline{x3},
+all of sort \rareInline{?BitVec},
+matches \rareInline{(or (bvugt a b) (= b a))}
+but not \rareInline{(or (bvugt a b) (= c a))},
+with \rareInline{a}, \rareInline{b}, and \rareInline{c} bit-vector constant
+symbols of the same bit-width.
+
+\subsubsection{\dsl Rules}
+A \dsl rewrite rule is defined with the \rareInline{define-rule} command
+which starts with a parameter list containing variables with their sorts.  
+These variables are used for matching as explained below.  
+After an optional \emph{definition list} (see below), 
+there follow two expressions that form the main body of the rule:
+the \emph{match} expression and the \emph{target} expression.
+The semantics of a rule with match expression $m$ and target expression $t$
+is that any expression $e$ matching $m$ under some sort-preserving matching substitution $\sigma$
+can be replaced by $t\sigma$.
+%
+With approximate sorts, the sort preservation requirement is relaxed as follows.
+In \dsl, for any sort constructor $S$ of arity $n > 0$, 
+there is a corresponding approximate sort \rareInline{($S$ ?\ $\cdots$\ ?)}
+with $n$ occurrences of \rareInline{?}
+which is always abbreviated as \rareInline{?$S$}.
+A variable $x$ with sort \rareInline{?$S$} (e.g., \rareInline{?BitVec}) 
+in a match expression matches all expressions whose sort is constructed with $S$
+(e.g., \rareInline{(BitVec 1)}, \rareInline{(BitVec 2),} and so on).
+Variables with sort \rareInline{?} match expressions of any sort.
+
+An optional \textit{definition list} may appear in a \dsl rule immediately 
+after the parameter list. 
+It starts with the keyword \rareInline{def} and provides 
+a list of local variables and their definitions,
+allowing the rewrite rule to be expressed more succinctly.
+A rule with a definition list is equivalent to the same
+rule without it, where each variable in the definition list
+has been replaced by its corresponding expression in the body of the rule.
+For a rule to be well-formed, all variables in the match and target
+expressions must appear either in the parameter list or the definition list.
+Similarly, each variable in the parameter list must appear in the match
+expression (while this second requirement could be relaxed, it is useful for
+catching mistakes).
+%
+Consider the following example.
+
+\begin{lstlisting}[language=rare]
+(define-rule bv-sign-extend-eliminate ((x ?BitVec) (n Int))
+  (def (s (bvsize x)))
+  (sign_extend n x)   (concat (repeat n (extract (- s 1) (- s 1) x)) x))
+\end{lstlisting}
+
+\noindent
+In this rule, there are two parameters, \rareInline{x}
+and \rareInline{n}.
+The sort annotation \rareInline{?BitVec} indicates that \rareInline{x}
+is a bit-vector without specifying its bit-width.
+%
+The latter is stored in the local variable \rareInline{s} 
+using the \rareInline{bvsize} operator.  
+The rule says that a \rareInline{(sign_extend n x)} expression can be replaced
+by repeating \rareInline{n} times the most significant bit of \rareInline{x}
+and then prepending this to \rareInline{x}.
+
+The \rareInline{define-cond-rule} command is similar to \rareInline{define-rule} except that
+it has an additional expression, the \textit{condition}, immediately after the
+parameter and definition lists. This restricts the rule's applicability
+to cases where the condition can be proven equivalent to true under the
+matching substitution. 
+In the example below, the condition \rareInline{(> n 1)} can be verified by evaluation 
+since in SMT-LIB, the first argument of \rareInline{repeat} must be a numeral.  
+
+\begin{lstlisting}[language=rare]
+(define-cond-rule bv-repeat-eliminate-1 ((x ?BitVec) (n Int))
+  (> n 1)   (repeat n x)   (concat x (repeat (- n 1) x)))
+\end{lstlisting}
+%
+%%CT This explanation is not really needed
+%This rule states that the first argument of a \rareInline{repeat} operation can
+%be decremented by one by introducing a \rareInline{concat} operation.
+Note that the rule does not apply to terms like \rareInline{(repeat 1\ $t$)} 
+or \rareInline{(repeat 0\ $t$)}.
+
+\subsubsection{Fixed-point Rules}
+
+The \rareInline{define-rule*} command defines rules that
+%, during elaboration, 
+should be applied repeatedly, to completion.
+%
+This is useful, for instance, in writing rules that iterate over
+the arguments of n-ary operators.  Its basic form, 
+with a body containing just a match and target expression, 
+defines a rule that, whenever is applied, must be applied again 
+on the resulting term until it no longer applies.
+
+The user can optionally supply a \emph{context} to control the iteration.  This
+is a third expression that must contain an underscore.  
+The semantics is that the match expression rewrites to the context expression, with
+the underscore replaced by the target expression.  Then the rule is applied
+again to the target expression only. 
+In the example below,
+the \rareInline{:list} modifier is used to represent an arbitrary number
+of arguments, including zero, of the same type.  
+
+\begin{lstlisting}[language=rare]
+(define-rule* bv-neg-add ((x ?BitVec) (y ?BitVec) (zs ?BitVec :list))
+  (bvneg (bvadd x y zs))   (bvneg (bvadd y zs))   (bvadd (bvneg x) _))
+\end{lstlisting}
+%
+This rule rewrites a term \rareInline{(bvneg (bvadd\ $s \ t \ \cdots$))}
+to the term \rareInline{(bvadd (bvneg\ $s$)\ $r$)} 
+where $r$ is the result of recursively applying the rule 
+to \rareInline{(bvneg (bvadd\ $t \ \cdots$))}.
+
+\subsubsection{Changes to \dsl}
+Here, we briefly mention the changes to \dsl with respect
+to \cite{notzli2022reconstructing}.  First, we have support for a richer class
+of approximate sorts, including approximate bit-vector and array sorts.  Also, we
+replaced the \rareInline{let} construct by the new \rareInline{def} construct.
+The definition list is more powerful as it applies to the entire rest of the
+body (whereas \rareInline{let} was local to a single expression).
+
+Additionally, to aid with bit-vector rewrite rules, we added several operators:
+\rareInline{bvsize}, which returns the width of an expression of sort
+\rareInline{?BitVec}; \rareInline{bv}, which takes a integer $n$ and natural $w$, 
+and returns a bit-vector of width $w$ and value $n\ \mathrm{mod}\ 2^w$;
+\rareInline{int.log2} which returns the integer (base 2) logarithm of an integer,
+and \rareInline{int.islog2}, which returns true iff its integer argument is a power of 2.
+
+We also removed the \rareInline{:const} modifier, which was used
+previously to indicate that a particular expression had to be a constant
+value.  We found that this adds complexity and is usually unnecessary.  For rules that actually manipulate specific constant values,
+we can specify those values explicitly, e.g., by using
+the \rareInline{bv} operator above.
+
