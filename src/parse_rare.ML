@@ -404,7 +404,7 @@ let
   val (((((_,alfT),rname),rparams),rexpressions),cs')
     = cs
       |>
-      Scan.succeed (debug_msg_parser ctxt ("Start parsing rule in line " ^ Int.toString(l) ))
+      Scan.succeed (debug_msg_parser ctxt ("Start parsing alf rule in line " ^ Int.toString(l) ))
       --| (Scan.one (fn c => c = "("))
       --| ignore_chars l " "
       -- alf_type_parser l
@@ -421,23 +421,7 @@ let
       --| ignore_chars l " "
       --| (Scan.one (fn c => c = ")"))
       --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")
- (*
-(declare-axiom bool-or-false ((xs Bool :list) (ys Bool :list))
-  (= (or xs false ys) (or xs ys))
-  :rare-fixed-point
-)
 
-(declare-rule bool-or-false ((xs Bool :list) (ys Bool :list))
-  :conclusion (= (or xs false ys) (or xs ys))
-  :rare-fixed-point
-)
-
-(declare-rule false_elim ((F Bool))
-    :premises ((= F false))
-    :conclusion (not F)
-)
-*)
-val _ = @{print}("af",alfT)
   fun seperate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "conclusion")::[c]) = (DEFINE_COND_RULE,SOME p,c) |
       seperate_expr_rule ((SMTLIB.Key "conclusion")::[c,SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) | (*TODO: Ask Andy does this has the context expr as argument? Or do thy not exist anymore?*)
       seperate_expr_rule ((SMTLIB.Key "conclusion")::[c]) = (DEFINE_RULE,NONE,c) |
@@ -453,8 +437,6 @@ val _ = @{print}("af",alfT)
 
 
   val (rtyp,rprecondition,conclusion) = rexpressions |> (if alfT = ALF_RULE then seperate_expr_rule else seperate_expr_axiom)
-val _ = @{print}("rtyp",rtyp)
-val _ = @{print}("conclusion",conclusion)
 
   val (rmatch,rtarget) = (fn (SMTLIB.S [SMTLIB.Sym "=", x,y]) => (x,y) | _ => raise_parser_error l "" ) conclusion
 in 
