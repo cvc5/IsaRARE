@@ -9,6 +9,10 @@
 \usepackage{multicol}
 \usepackage{stmaryrd}
 \usepackage{isabelle,pdfsetup}
+\usepackage{cite}
+\usepackage{enumitem}
+\usepackage{alltt}
+\usepackage{xspace}
 
 % further packages required for unusual symbols (see also
 % isabellesym.sty), use only when needed
@@ -30,6 +34,54 @@
 %\usepackage{textcomp}
   %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
   %\<currency>
+
+\usepackage{syntax}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{adjustbox}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\lstdefinelanguage{rare}{%
+	alsoletter={-},
+	language=lisp,
+	commentstyle=\itshape\color{black!60},
+	keywordstyle=\bfseries,
+	stringstyle=\color{purple},
+	alsoletter=0123456789?,
+	keywords={
+		define-rule,
+		define-cond-rule,
+		define-rule*,
+		def,
+		list,
+		const
+	},
+	classoffset=1,
+	morekeywords={->,Array,Bool,BitVec,Int,Real,String,?,?BitVec,?Array,?Set},keywordstyle=\color{blue!70!black},
+	classoffset=2,
+	morekeywords={and,not,or,=>},
+	classoffset=3,
+	morekeywords={true,false,0,1,2,3,4,5,6,7,8,9,10},keywordstyle=\color{violet!70!black},
+	classoffset=0,
+	rulesepcolor=\color{black},
+	showstringspaces=false,
+	columns=fullflexible,keepspaces=true,
+	basicstyle={\ttfamily\small\upshape},
+	numbers=none,
+	%    numberstyle=\tiny\color{gray},
+	breaklines=true,
+	breakatwhitespace=true,
+	mathescape=true,
+	tabsize=3,
+	texcl
+}
+\newcommand{\rareInline}[1]{\lstinline[language=rare]|#1|}
+
+\newcommand{\ceil}[1]{\lceil {#1} \rceil}
+\newcommand{\dsl}{\textsc{Rare}\xspace}
 
 % this should be the last package used
 \usepackage{pdfsetup}
@@ -58,8 +110,8 @@
 \input{session}
 
 % optional bibliography
-%\bibliographystyle{abbrv}
-%\bibliography{root}
+\bibliographystyle{abbrv}
+\bibliography{root}
 
 \end{document}
 
