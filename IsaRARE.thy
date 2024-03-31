@@ -27,13 +27,15 @@ IsaRARE can be used simply by importing IsaRARE.thy:
 
 theory IsaRARE
   imports "HOL-CVC.Smtlib_String" "HOL-CVC.SMT_CVC"
-  keywords "parse_rare_file" "parse_rare" :: diag
+  keywords "parse_rare_file" "parse_rare" "print_IsaRARE_options" :: diag
 begin
 
+(*
 text\<open>
 The two keywords the theory provides are used as follows:\\
 
-1. To parse a single RARE rule use:
+\begin{enumerate}
+\item To parse a single RARE rule use:
 
 @{command "parse_rare"} <input rare rule as string> 
 
@@ -41,7 +43,7 @@ Example usage:
 
 @{command "parse_rare"} "(define-rule bool-eq-true ((t Bool)) (= t true) t)"\\
 
-2. To parse a RARE file:
+\item To parse a RARE file:
 
 @{command "parse_rare_file"} <input rare file, theory imports, new theory name>
 
@@ -49,78 +51,18 @@ Example usage
 
 @{command "parse_rare_file"} "/IsaRARE/Tests/example\_rewrites" "Parent\_Theory" "Example\_Rewrites"
 
+\end{enumerate}
+
 More information can be found in Section \ref{sec:use}.
 \<close>
+*)
 
 
-
-section \<open>The RARE language\<close>
+section \<open>The RARE language\label{sec:rare}\<close>
 
 text\<open>
-
-The RARE language was introduced by N\"otzli et al.~\cite{notzli2022reconstructing}. A detailed
-overview can be found on the cvc5 website
-\footnote{\url{https://github.com/cvc5/cvc5/blob/main/src/rewriter/README.md}}.
-
-A RARE file contains a list of rules whose syntax is defined by the grammar in Figure
-\ref{fig:grammar}. Expressions use SMT-LIB syntax with a few exceptions. These include the use of
-gradual types for parameterized sorts (e.g., arrays and bit-vectors) and the addition of a few
-extra operators (e.g.,bvsize, described below). RARE uses SMT-LIB 3 syntax
-\footnote{\url{http://smtlib.cs.uiowa.edu/version3.shtml}}, which while close to SMT-LIB 2,
-mostly differs from its predecessor by the use of higher-order functions for indexed operators.
-
-\begin{figure}[t]
-    \grammarindent0.8in
-    \renewcommand{\ulitleft}{\footnotesize \ttfamily \bfseries}
-    \renewcommand{\ulitright}{}
-    \footnotesize
-    \begin{grammar}{\tiny}
-      <rule> ::= "(" "define-rule" <symbol> "(" <par>$^*$ ")" [<defs>] <expr> <expr> ")"
-      \alt "(" "define-rule*" <symbol> "(" <par>$^*$ ")" [<defs>] <expr> <expr> [<expr>] ")"
-      \alt "(" "define-cond-rule" <symbol> "(" <par>$^*$ ")" [<defs>] <expr> <expr> <expr> ")"
-
-      <par> ::= <symbol> <sort> [":list"]
-
-      <sort> ::= <symbol> | "?" | "?"<symbol> | "(" <symbol> <numeral>$^+$ ")"
-
-      <expr> ::= <const> | <id> | "(" <id> <expr>$^+$")"
-
-      <id> ::= <symbol> | "(" <symbol> <numeral>$^+$ ")"
-
-      <binding> ::= "(" <symbol> <expr> ")"
-
-      <defs> ::= "(" "def" <binding>$^+$ ")"
-    \end{grammar}
-
-    \caption{Overview of the grammar of RARE.}
-    \label{fig:grammar}
-\end{figure}
-
-
-
-The basic form of a RARE rewrite rule is defined using \rareInline{define-rule}. 
-It starts with a parameter list containing variables with their sorts.  
-These variables are used for matching as explained below.  
-After an optional \emph{definition list} (see below), 
-there are two expressions that form the main body of the rule:
-the \emph{match} expression and the \emph{target} expression.
-We say that an expression $e$ \emph{matches}
-a match expression $m$ if there is some \emph{matching substitution} $\sigma$
-that replaces each variable in $m$ by a term of the same sort to obtain $e$ 
-(i.e., $m\sigma$ is syntactically identical to $e$).
-For example, the expression \rareInline{(or (bvugt x1 x2) (= x2 x3))},
-with variables \rareInline{x1}, \rareInline{x2}, \rareInline{x3}
-all of sort \rareInline{?BitVec},
-matches \rareInline{(or (bvugt a b) (= b a))}, 
-but not \rareInline{(or (bvugt a b) (= c a))},
-where \rareInline{a}, \rareInline{b}, and \rareInline{c} are constant symbols.
-The semantics of a rule with match expression $m$ and target expression $t$
-is that any expression $e$ matching $m$ under some matching substitution $\sigma$
-can be replaced by $t\sigma$.
-
-
+\input{RARE.tex}
 \<close>
-
 
 section \<open>Components\<close>
 
@@ -135,8 +77,17 @@ ML_file \<open>src/isarare_config.ML\<close>
 
 text \<open>
 This file provides diagnostics and options for IsaRARE. The options and their usage are described
-in /ref{sec:options}
+in Section \ref{sec:options}
 \<close>
+
+        
+ML_file \<open>src/abstract_type_parser.ML\<close>
+
+text \<open>
+This file contains parser functionality for the extensions to SMT-LIB RARE offers. Mostly,
+this concerns parsing abstract types (see Section \ref{sec:rare}). 
+\<close>
+
 
 ML_file \<open>src/parse_rare.ML\<close>
 
@@ -144,21 +95,27 @@ text \<open>
 This file provides functionality to parse a RARE rule into a AST. This datatype is called
 rewrite_tree and is defined in this file.
 \<close>
+ 
 
-ML_file \<open>src/rare_impl_assump.ML\<close>
+ML_file \<open>src/rare_impl_assms.ML\<close>
 
 text \<open>
 This file provides enables the addition of assumptions to the AST whenever Isabelle's
 definition of an operator is too general for SMT-LIB.
 \<close>
 
+ML_file \<open>src/process_rare.ML\<close>
+
+
+(*  
 ML_file \<open>src/rare_lists.ML\<close>
 
 text \<open>
 This file deals with the non SMT-LIB feature of RARE to use lists in rules (see Section TODO).
 \<close>
+*)
 
-ML_file \<open>src/write_rewrite_as_lemma.ML\<close>
+ML_file \<open>src/write_theory.ML\<close>
 
 
 text \<open>
@@ -168,10 +125,64 @@ suggested proof is also generated here.
 
 
 
+(*<*)
 
 ML \<open>
- open Parse_RARE
- open Write_Rewrite_as_Lemma
+
+ fun print_rewrite (t:Toplevel.transition) :  Toplevel.transition =
+  Toplevel.keep (fn toplevel => (fn state =>
+   Print_Mode.with_modes [] (fn () => writeln (IsaRARE_Config.print_options state)) ()) (Toplevel.context_of toplevel)) t
+
+val _ =
+  Outer_Syntax.command \<^command_keyword>\<open>print_IsaRARE_options\<close> "outputs all options currently set for IsaRARE"
+    (Scan.succeed ((print_rewrite )))
+\<close>  
+
+print_IsaRARE_options
+
+ML \<open>
+
+val ISARARE_HOME = OS.FileSys.getDir()
+
+val _ =  Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare_file\<close> ("parse file in rare format" ^
+ "and output lemmas. <rare_file, import theories, target_theory>")
+  (((Parse.string -- Parse.string)  -- Parse.string)
+  >> (fn ((file_name,theory_imports),theory_name) => fn lthy =>
+  let
+    (*Built new path*)
+    val file_path = Path.explode file_name
+    val new_theory_name = theory_name ^ ".thy"
+    val ctxt = Local_Theory.target_of lthy
+    val res_path = Path.append (Path.dir file_path) (Path.basic new_theory_name)
+
+    (*Calculate result*)
+    val lines = Bytes.split_lines (Bytes.read file_path)
+    val parsed_lines = lines |> Parse_RARE.lex_rewrites ctxt |> Parse_RARE.parse_rewrites ctxt
+    val processed_smtlibTerm = parsed_lines |> map (Process_RARE.process_rule ctxt)
+    val result = processed_smtlibTerm |> Write_Theory.write_thy ctxt theory_name theory_imports
+
+
+
+     val _ = (Output.writeln result)
+          val _ =
+           Bytes.write
+            res_path (Bytes.string result)
+          val _ = @{print} ("done writing to file", res_path)
+ in  lthy
+ end))
+
+\<close>
+
+parse_rare_file "/home/lachnitt/Sources/IsaRARE/Tests/level0_rewrites" "" "Level0_Rewrites"
+
+(*
+val lines = Bytes.split_lines (Bytes.read file_path)
+val lexed = Parse_RARE.lex_rewrites ctxt lines
+
+val parsed = Parse_RARE.parse_rewrites ctxt lexed
+val _ = @{print}("after parsing ",map Parse_RARE.str_of parsed)
+
+ fun parse_and_lex = 
 
  (*TODO: Can I use: Library.cat_lines?*)
  fun string_of_rewrite ctxt s
@@ -184,37 +195,15 @@ ML \<open>
  val _ =
   Outer_Syntax.command \<^command_keyword>\<open>parse_rare\<close> "parse a single rule in rare format (provided as a string) and output lemma"
     ( Parse.string >> print_rewrite);
-
-val ISARARE_HOME = OS.FileSys.getDir()
-
- val semi = Scan.option \<^keyword>\<open>;\<close>; (*TODO: Do not need?*)
+val semi = Scan.option \<^keyword>\<open>;\<close>; (*TODO: Do not need?*)
 val x = OS.Process.getEnv
 
- val _ =  Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare_file\<close> "parse file in rare format and output lemmas. <rare_file, import theories, target_theory>"
-    (((Parse.string -- Parse.string)  -- Parse.string)
-    >> (fn ((file_name,theory_imports),theory_name) => fn lthy =>
-  let
-          (*Built new path*)
-          val file_path = Path.explode file_name
-          val new_theory_name = theory_name ^ ".thy"
-          val ctxt = Local_Theory.target_of lthy
-          val res_path = Path.append (Path.dir file_path) (Path.basic new_theory_name)
-
-          (*Calculate result*)
-          (*val lines = raw_explode ( hd  (Bytes.contents (Bytes.read file_path))) ;*)
-          val lines = Bytes.split_lines (Bytes.read file_path)
-          val res =  (Write_Rewrite_as_Lemma.write_thy (Parse_RARE.parse_rewrites ctxt lines) theory_name theory_imports ctxt)
-          val _ = (Output.writeln res)
-
-          val _ =
-           Bytes.write
-            res_path (Bytes.string res)
-          val _ = @{print} ("done writing to file", res_path)
- in  lthy
- end))
 \<close>
 
-lemmas cvc_arith_rewrite_defs = SMT.z3div_def
+lemmas cvc_arith_rewrite_defs = SMT.z3div_def (*TODO: Needed?*)
+(*>*)
+
+section \<open>Functionality\label{sec:functionality}\<close>
 
 
 section \<open>Options\label{sec:options}\<close>
@@ -231,21 +220,77 @@ subsection \<open>Traces and Debugging\<close>
 
 text\<open>
 To control the amount of information IsaRARE prints set @{attribute "IsaRARE_verbose"} to
-<true|false>
+<true|\textbf{false}>:
 \<close>
 
-declare[[IsaRARE_verbose = true]] (*Get additional information*)
+  declare[[IsaRARE_verbose = true]] (*Get additional information*)
 
 text\<open>
-For debugging information set @{attribute "IsaRARE_verbose"} to <true|false>
+For debugging information set @{attribute "IsaRARE_verbose"} to <true|\textbf{false}>.
 \<close>
 
-declare[[IsaRARE_debug = true]] (*Get debugging information*)
+  declare[[IsaRARE_debug = true]] (*Get debugging information*)
+
+subsection \<open>Components\<close>
+
+text\<open>
+As explained in Section \ref{sec:functionality} there are discrepancies between some
+SMT-LIB functions and their closest counterpart commonly used in some Isabelle library.
+IsaRARE automatically adds assumption to lemmas if the Isabelle definition has to be restricted
+because the SMT-LIB definition is undefined in some cases.
+
+This information can make a lemma quite convoluted. The process can can be turned off with the option
+@{attribute "IsaRARE_implAssump"} = \textbf{true}|false>. This can be useful to get an overview.
+
+WARNING: Turning this option off might create a lemma that is false or far harder to prove than the
+rewrite! Especially for rules containing bit-vectors IsaRARE might not be able to infer types
+correctly from gradual types. We recommend using the proof strategy Minimum instead to simplify
+assumptions. 
+\<close>
+
+declare[[IsaRARE_implAssump = true]] (*Turn implicit assumption generation on or off (Warning this is an expert option: Lemmas might not be provable without the assumptions) *)
+
+declare[[IsaRARE_listsAsVar = false]] (*When turned on list parameters are parsed as if they were variables (Warning this is an expert option: Lemmas might be proven but corresponding RARE rule is not correct) *)
+
 
 subsection \<open>Proofs\<close>
 
-declare[[IsaRARE_implAssump = true]] (*Turn implicit assumption generation on or off (Warning this is an expert option: Lemmas might not be provable without the assumptions) *)
-declare[[IsaRARE_listsAsVar = false]] (*When turned on list parameters are parsed as if they were variables (Warning this is an expert option: Lemmas might be proven but corresponding RARE rule is not correct) *)
+text\<open>
+IsaRARE can generate differently elaborate proofs. While many lemmas can be proven fully
+automatically this might fail for others. 
+
+Proof suggestions can be completely turned off by setting @{attribute IsaRARE_proofStrategy} to
+"None". This means however that some lemmas will contain IsaRARE specific definitions.
+
+If you decide to use the suggested proof sketch you have to understand the two dimensions at
+play here:
+
+1. Reliability. You might plan to re-run IsaRARE on your rewrite database frequently. Any rules that
+have not changed since the last run should still have a valid proof without any manual interaction.
+For you the option Reliable is the best. This option will produce a proof sketch that only 
+removes any custom IsaRARE definition from the lemma. Then, it will call a second lemma with the
+same name (e.g., rewrite_double_neg) as the current lemma but with a  \_lemma added
+to its name (i.e., rewrite_double_neg_lemma).
+You can now copy the proof state at that point and make such a lemma. Then, you prove it in another
+theory file that you add to the @{command parse_rare_file} as a parent theory.
+
+2. Automation. You want to get all the help you can get to prove a lemma. The option Full with some
+of the theory specific options explained below will be the best option for you. Sometimes it will
+be too eager and solve the goal before the proof has finished. You will have to manually clean up
+the file in that case. Often however, no user provided proof might be necessary at all.
+
+There is a bit of a trade-off between these two goals. In the first case you need to provide a
+lemma for every lemma even if it could be automatically proven just to avoid the case of any proof
+failing. In the second case whenever you re-run IsaRARE one of your proofs might break. Usually,
+it is a good idea to use Full the first time you use IsaRARE on a database and then copy the proofs
+and use Reliable for regression tests. 
+
+The option Minimum tries to find a balance between both approaches; it applies some heuristics to
+decide whether a helper lemma is necessary or not.
+
+IsaRARE_proofStrategy = <None | Minimum | Full | TACAS_Autoprove>
+\<close>
+
 declare[[IsaRARE_proofStrategy = "Minimum"]] (*Turn on specific strategies for proof printed, e.g. strings*)
 declare[[ML_print_depth=10000]]
 
@@ -307,10 +352,13 @@ section \<open>Expansions (Experts) \<close>
 
 section \<open>Limitations\<close>
 
-
+If you are parsing a name defined in another theory it is going to be from that theory even if you
+don't intend to \<rightarrow> This should not matter to IsaRARE
 
 (*
 Note: IsaRARE can currently not deal with line breaks in rewrite rules
 *)
+*)
 
+section \<open>Reference Manual\<close>
 end
