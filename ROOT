@@ -1,3 +1,4 @@
+
 session "IsaRARE" (main) = "HOL-CVC" +
  description
   "IsaRARE transforms rewrite rules in the RARE language into Isabelle lemmas"
@@ -8,7 +9,10 @@ session "IsaRARE" (main) = "HOL-CVC" +
  theories
   IsaRARE (global)
  document_files
+    "RARE.tex"
+    "root.bib"
     "root.tex"
+
 
 session "IsaRARE-Tests" in "Tests" = "IsaRARE" +
   description
