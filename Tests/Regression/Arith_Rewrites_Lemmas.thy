@@ -1,5 +1,5 @@
 theory Arith_Rewrites_Lemmas
-  imports "HOL-CVC.Dsl_Nary_Ops" 
+  imports "HOL.Dsl_Nary_Ops" 
 begin
 
 lemma arith_plus_zero_lemma:
