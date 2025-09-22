@@ -4,6 +4,7 @@ session "Manual" = "HOL-CVC" +
   "Manual"
   "Config"
   "Parsing"
+  "ImplAss"
  document_files
   "root.tex"
 
