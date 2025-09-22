@@ -22,19 +22,19 @@ struct
 
 (* Utilities *)
 
-fun hackish_string_of_term ctxt =
+fun hackish_string_of_term ctxt = 
  Print_Mode.setmp [] (Syntax.string_of_term ctxt)
-  #> YXML.content_of
+  (*#> YXML.content_of*)
 
 fun hackish_string_of_sort ctxt = (*Maybe there is an option for hackish_string_of_type instead*)
  Print_Mode.setmp [] (Syntax.string_of_sort ctxt)
-  #> YXML.content_of
+  (*#> YXML.content_of*)
   #> Sledgehammer_Util.simplify_spaces
   #> raw_explode #> Library.filter_out (curry (op =) "?") #> implode
 
 fun hackish_string_of_type ctxt =
  Print_Mode.setmp [] (Syntax.string_of_typ ctxt)
-  #> YXML.content_of
+  (*#> YXML.content_of*)
   #> Sledgehammer_Util.simplify_spaces
   #> raw_explode #> Library.filter_out (curry (op =) "?") #> implode
 
@@ -174,6 +174,7 @@ fun find_proof ctxt concl =
 
 
 (* Combined *)
+
 
 fun write_lemma ctxt i (lemma as {rule_name,rule_body} : rewrite_rule_lemma) =
  case rule_body of

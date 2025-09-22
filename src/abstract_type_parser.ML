@@ -7,40 +7,12 @@ Additional type and term parser for RARE for its features that extend SMT-LIB
 
 fun rare_type_parser (SMTLIB.Sym "?Array", [])
       = SOME (Type(\<^type_name>\<open>fun\<close>,[dummyT,Type(\<^type_name>\<open>option\<close>,[dummyT])]))
-  |  rare_type_parser (SMTLIB.Sym "?Set", []) = SOME (Type(\<^type_name>\<open>Set.set\<close>,[dummyT]))
-  |  rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
+  | rare_type_parser (SMTLIB.Sym "?Set", []) = SOME (Type(\<^type_name>\<open>Set.set\<close>,[dummyT]))
+  | rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
   | rare_type_parser _ = NONE
 
-
-
-
-val _ = Theory.setup (Context.theory_map (
-  SMTLIB_Proof.add_term_parser cvc_term_parser)
-)
 val _ = Theory.setup (Context.theory_map (
   SMTLIB_Proof.add_type_parser rare_type_parser))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 (*
 fun mk_test (t1, t2) = (Const (\<^const_name>\<open>Word.word_cat\<close>, dummyT --> dummyT --> dummyT))  $ t1 $ t2

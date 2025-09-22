@@ -84,7 +84,7 @@ ML_file \<open>src/abstract_type_parser.ML\<close>
 
 text \<open>
 This file contains parser functionality for the extensions to SMT-LIB RARE offers. Mostly,
-this concerns parsing abstract types (see Section \ref{sec:rare}). 
+this concerns parsing approximate types (see Section \ref{sec:rare}). 
 \<close>
 
 
