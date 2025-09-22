@@ -22,15 +22,15 @@ IsaRARE itself does not require any prerequisites but to execute the bit-vector 
 Tests/ folder a copy of Finite Machine Word Library from the Archive of Formal Proofs (AFP) is
 needed \cite{WordLibAFP}. We have tested our tool with the version of the AFP from October 16, 2023.
 
-IsaRARE can be used simply by importing IsaRARE.thy:
+IsaRARE can be used simply by importing IsaRARE.thy. To support Words use IsaRARE_Word. This is
+merely a convenience solution since loading the Word library can take a while.
 \<close>
 
 theory IsaRARE
-  imports "HOL-CVC.Smtlib_String" "HOL-CVC.SMT_CVC"
+  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" (*HOL.SMT_CVC_Word *) HOL.SMT_CVC_Extension
   keywords "parse_rare_file" "parse_rare" "print_IsaRARE_options" :: diag
 begin
 
-(*
 text\<open>
 The two keywords the theory provides are used as follows:\\
 
@@ -53,9 +53,9 @@ Example usage
 
 \end{enumerate}
 
-More information can be found in Section \ref{sec:use}.
+More information can be found in Section \ref{sec:functionality}.
 \<close>
-*)
+
 
 
 section \<open>The RARE language\label{sec:rare}\<close>
@@ -65,7 +65,6 @@ text\<open>
 \<close>
 
 section \<open>Components\<close>
-
 
 text \<open>
 All components of IsaRARE can be found in src/. In the following, we briefly summarize the function
@@ -96,7 +95,6 @@ This file provides functionality to parse a RARE rule into a AST. This datatype 
 rewrite_tree and is defined in this file.
 \<close>
  
-
 ML_file \<open>src/rare_impl_assms.ML\<close>
 
 text \<open>
@@ -104,16 +102,17 @@ This file provides enables the addition of assumptions to the AST whenever Isabe
 definition of an operator is too general for SMT-LIB.
 \<close>
 
-ML_file \<open>src/process_rare.ML\<close>
-
-
-(*  
 ML_file \<open>src/rare_lists.ML\<close>
 
 text \<open>
-This file deals with the non SMT-LIB feature of RARE to use lists in rules (see Section TODO).
+This file provides enables the RARE extension of using variables annotated as :list.
 \<close>
-*)
+
+ML_file \<open>src/process_rare.ML\<close>
+
+text \<open>
+This file transforms the AST into a Isabelle term.
+\<close>
 
 ML_file \<open>src/write_theory.ML\<close>
 
@@ -124,25 +123,86 @@ suggested proof is also generated here.
 \<close>
 
 
+section \<open>Functionality\label{sec:functionality}\<close>
 
-(*<*)
+text \<open>
+
+To print the current status of all options use, @{command print_IsaRARE_options}.
+
+Example output:
+
+@{verbatim
+"The options currently set for IsaRARE are:
+home directory set to: 
+verbose: false
+debug: false
+rule format RARE
+implicit assumption generation: true
+lists are treated as variables: false
+the proof strategy is set to: Full
+the proof theory strategy is set to: All
+lemmas are in the right form to use them for reconstruction (makes them a bit harder to read): false"
+}
+
+\<close>
 
 ML \<open>
 
- fun print_rewrite (t:Toplevel.transition) :  Toplevel.transition =
+fun print_rewrite (t:Toplevel.transition) :  Toplevel.transition =
   Toplevel.keep (fn toplevel => (fn state =>
-   Print_Mode.with_modes [] (fn () => writeln (IsaRARE_Config.print_options state)) ()) (Toplevel.context_of toplevel)) t
+   Print_Mode.with_modes [] (fn () => writeln (IsaRARE_Config.print_options state)) ())
+   (Toplevel.context_of toplevel)) t
 
 val _ =
-  Outer_Syntax.command \<^command_keyword>\<open>print_IsaRARE_options\<close> "outputs all options currently set for IsaRARE"
-    (Scan.succeed ((print_rewrite )))
+  Outer_Syntax.command \<^command_keyword>\<open>print_IsaRARE_options\<close>
+  "outputs all options currently set for IsaRARE"
+  (Scan.succeed print_rewrite)
 \<close>  
 
-print_IsaRARE_options
+text \<open>
+
+The command  @{command parse_rare} expects a rewrite as a single string. It can contain line
+breaks or commands. It should only contain a single rewrite rule though. To transform more than one
+line please use command  @{command parse_rare_file} (see below).
+
+\<close>
 
 ML \<open>
+ val _ =
+   Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare\<close>
+   "parse a single rule in rare format (provided as a string) and output lemma"
+  (Parse.string
+  >> (fn (rule_str) => fn lthy =>
+  let
+    val ctxt = Local_Theory.target_of lthy
 
-val ISARARE_HOME = OS.FileSys.getDir()
+    (* Calculate result *)
+    val parsed_lines = [rule_str] |> Parse_RARE.lex_rewrites ctxt |> Parse_RARE.parse_rewrites ctxt
+    val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done parsing rewrites"))
+    val processed_smtlibTerm = parsed_lines |> map (Process_RARE.process_rule ctxt)
+    val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done processing rewrites"))
+    val result = processed_smtlibTerm |> map (Write_Theory.write_lemma ctxt 1) |> String.concat
+    val _ = Print_Mode.with_modes [] (fn () => writeln result)
+    val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done writing rewrites!"))
+
+  in lthy end))
+\<close>
+
+text \<open>
+
+For @{command parse_rare_file} there are no restrictions on import theories or target theory. In
+the future we might use the imported theories internally (to suggest proofs). However, right now
+we don't and it is just useful if you reload RARE theories often (e.g., you have the proofs in a
+different file and use our option such that they are always used, see \ref{sec:options}). 
+In that case you want to add the name of that theory so when you reload the theory from the RARE
+file all proofs automatically go though again.
+
+Either set @{verbatim "IsaRARE_HOME"} or use absolute paths. Otherwise, IsaRARE will not be able
+to find your files. While we can get the path IsaRARE is started from we cannot get where it is
+saved at currently.
+\<close>
+
+ML \<open>
 
 val _ =  Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare_file\<close> ("parse file in rare format" ^
  "and output lemmas. <rare_file, import theories, target_theory>")
@@ -150,62 +210,99 @@ val _ =  Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare_file\<cl
   >> (fn ((file_name,theory_imports),theory_name) => fn lthy =>
   let
     (*Built new path*)
-    val file_path = Path.explode file_name
-    val new_theory_name = theory_name ^ ".thy"
     val ctxt = Local_Theory.target_of lthy
+    val home = 
+      if file_name |> Path.explode |> Path.expand |> Path.is_absolute 
+      then ""
+      else Config.get ctxt IsaRARE_Config.IsaRAREHome
+    val file_path = Path.explode (home ^ file_name)
+    val new_theory_name = theory_name ^ ".thy"
     val res_path = Path.append (Path.dir file_path) (Path.basic new_theory_name)
+    val _ = IsaRARE_Config.verbose_msg ctxt
+       (K ("Transforming rewrites from file: " ^ (res_path |> Path.implode) ^
+           " into theory " ^ new_theory_name ^ " saved at " ^ (res_path |> Path.implode)))
 
     (*Calculate result*)
     val lines = Bytes.split_lines (Bytes.read file_path)
     val parsed_lines = lines |> Parse_RARE.lex_rewrites ctxt |> Parse_RARE.parse_rewrites ctxt
-    val processed_smtlibTerm = parsed_lines |> map (Process_RARE.process_rule ctxt)
-    val result = processed_smtlibTerm |> Write_Theory.write_thy ctxt theory_name theory_imports
-
-
+                        |> map (Process_RARE.process_rule ctxt)
+    val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done parsing rewrites"))
+    val result = parsed_lines |> Write_Theory.write_thy ctxt theory_name theory_imports
+    val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done processing rewrites"))
 
      val _ = (Output.writeln result)
           val _ =
            Bytes.write
             res_path (Bytes.string result)
-          val _ = @{print} ("done writing to file", res_path)
+     val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done writing rewrites!"))
  in  lthy
  end))
+\<close>
+
+declare[[IsaRARE_debug=false]]
+
+
+(*parse_rare_file "~/Downloads/int2.smt2" "HOL.Real" "TestKey2"*)
+
+
+section \<open>Examples\label{sec:examples}\<close>
+
+text \<open>
+ To run these change @{verbatim IsaRARE_HOME} below. Then, take them out of the comment. All
+ examples in this file are without bit-vectors. For bit-vector examples look in
+ \path{IsaRARE_Word.thy}.
+
+ \path{level0_rewrites} contains examples without approximate types and without lists.
+ \path{level2a_rewrites} contains examples with approximate types and without lists.
+ \path{level2b_rewrites} contains examples without approximate types and with lists.
+ \path{level2_rewrites} contains examples with approximate types and with lists.
+
+ \path{level3_rewrites} contains examples with complex types (such as arrays and sets)
+  but without implicit assumptions
 
 \<close>
 
-parse_rare_file "/home/lachnitt/Sources/IsaRARE/Tests/level0_rewrites" "" "Level0_Rewrites"
+(*<*)
+declare[[IsaRARE_HOME = "/home/lachnitt/Sources/IsaRARE/"]]
 
-(*
-val lines = Bytes.split_lines (Bytes.read file_path)
-val lexed = Parse_RARE.lex_rewrites ctxt lines
+declare[[IsaRARE_debug]]
+declare[[ML_print_depth=100]]
+declare[[IsaRARE_seperateLemmasForTypes = true]]
 
-val parsed = Parse_RARE.parse_rewrites ctxt lexed
-val _ = @{print}("after parsing ",map Parse_RARE.str_of parsed)
-
- fun parse_and_lex = 
-
- (*TODO: Can I use: Library.cat_lines?*)
- fun string_of_rewrite ctxt s
-  = (Write_Rewrite_as_Lemma.write_thy (Parse_RARE.parse_rewrites ctxt [s]) "THEORY_NAME" "IMPORTING_THEORIES" ctxt)
-
- fun print_rewrite (cs:string) (t:Toplevel.transition) :  Toplevel.transition =
-  Toplevel.keep (fn toplevel => (fn state =>
-   Print_Mode.with_modes [] (fn () => writeln (string_of_rewrite state cs)) ()) (Toplevel.context_of toplevel)) t
-
- val _ =
-  Outer_Syntax.command \<^command_keyword>\<open>parse_rare\<close> "parse a single rule in rare format (provided as a string) and output lemma"
-    ( Parse.string >> print_rewrite);
-val semi = Scan.option \<^keyword>\<open>;\<close>; (*TODO: Do not need?*)
-val x = OS.Process.getEnv
-
-\<close>
-
-lemmas cvc_arith_rewrite_defs = SMT.z3div_def (*TODO: Needed?*)
 (*>*)
 
-section \<open>Functionality\label{sec:functionality}\<close>
+
+parse_rare_file "Tests/level0_rewrites" "HOL.Real" "Level0_Rewrites"
+parse_rare_file "Tests/level2a_rewrites" "HOL.Real" "Level2a_Rewrites"
+parse_rare_file "Tests/level2b_rewrites" "HOL.Real" "Level2b_Rewrites"
+parse_rare_file "Tests/level2_rewrites" "HOL.Real" "Level2_Rewrites"
+parse_rare_file "Tests/level3a_rewrites" "HOL.Real" "Level3a_Rewrites"
 
 
+
+
+parse_rare_file "Tests/Andy/arith_rewrites" "HOL.Real" "Arith_Rewrites"
+parse_rare_file "Tests/Andy/boolean_rewrites" "HOL.Real" "Bool_Rewrites"
+
+parse_rare_file "Tests/Andy/boolean_rewrites" "HOL.Real" "Bool_Rewrites"
+
+parse_rare_file "Tests/Jibiana/no_lists_no_re.txt" "" "Jibiana_String_Rewrites"
+
+
+
+parse_rare_file "Tests/Jibiana/lists.txt" "" "Jibiana_String_Rewrites_Lists"
+parse_rare_file "Tests/Jibiana/re.txt" "" "Jibiana_String_Rewrites_Re"
+
+
+
+
+parse_rare_file "Tests/Andy/boolean_rewrites" "HOL.Real" "New_String"
+
+
+parse_rare_file "Tests/Andy/arith_rewrites" "HOL.Real" "New_String"
+
+
+thm cvc_string_rewrite_defs
 section \<open>Options\label{sec:options}\<close>
 
 subsection \<open>General\<close>
@@ -341,24 +438,25 @@ This checks all files except the bit-vector rewrites that we have not proven yet
 To use the graphical user interface open Tests/IsaRARE\_Tests.thy. 
 \<close>
 
-
-
-section \<open>Expansions (Experts) \<close>
-
-(*TODO: Documentation adding new operators to parser*)
-
-(*TODO: Documentation new_nary operators*)
-
+print_IsaRARE_options
 
 section \<open>Limitations\<close>
 
+text \<open>
 If you are parsing a name defined in another theory it is going to be from that theory even if you
-don't intend to \<rightarrow> This should not matter to IsaRARE
+don't intend to This should not matter to IsaRARE
+
+Real constants currently have to be written with a decimal point 0.0
+
+No two rules with the same name in the same file currently (we can change that if there is need) 
+\<close>
 
 (*
 Note: IsaRARE can currently not deal with line breaks in rewrite rules
 *)
-*)
 
-section \<open>Reference Manual\<close>
+declare[[IsaRARE_verbose = true,IsaRARE_debug]]
+parse_rare_file "Tests/new_bv_rewrites" "HOL.Real" "New_BV_Rewrites"
+
+
 end

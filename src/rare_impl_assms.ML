@@ -77,7 +77,7 @@ val pos_fst_arg_size_sum = ["zero_extend","sign_extend"]
 
 
 val needs_assms = size_of_fst_arg @ pos_fst_arg @ pos_fst_arg_size_sum @ 
-  ["bv","extract","concat","repeat" ]
+  ["@bv","bv","extract","concat","repeat" ]
 
 fun assms_by_operator (SMTLIB.S [SMTLIB.Sym "bv", value, width]) new_name = 
   [
@@ -154,11 +154,12 @@ However, since we added: length (XYZ ys) = size(ys), our concat function will fa
 We can also add this here but that would include binarizing the term
 
 *)
-fun process_concat (implAssTable,sharingTable) [xs] = ([],(implAssTable,sharingTable) )
+fun process_concat (implAssTable,sharingTable) xs = ([],(implAssTable,sharingTable) )
 
-fun traverse ctxt (implAssTable,sharingTable) [(t as (SMTLIB.S (SMTLIB.Sym x::xs)))] = 
+fun traverse ctxt (implAssTable,sharingTable) (t as (SMTLIB.S (SMTLIB.Sym x::xs))) = 
 let
-  val (traversed_children,(implAssTable,sharingTable)) = traverse ctxt (implAssTable,sharingTable) xs
+  val _ = @{print}("sdf",x)
+  val (traversed_children,(implAssTable,sharingTable)) = traverse_children ctxt ([],(implAssTable,sharingTable)) xs
   val t' = (SMTLIB.S (SMTLIB.Sym x::traversed_children))
 in
  if x = "concat"
@@ -175,18 +176,21 @@ in
    in ([t'],(implAssTable,sharingTable)) end
  else ([t'],(implAssTable,sharingTable))
 end |
-traverse _ (implAssTable,sharingTable) [] = ([],(implAssTable,sharingTable)) |
-traverse ctxt (implAssTable,sharingTable) (x::xs) =
-  let
-    val ([traversed_x],(implAssTable,sharingTable)) = traverse ctxt (implAssTable,sharingTable) [x]
-    val (xs',(implAssTable,sharingTable)) = traverse ctxt (implAssTable,sharingTable) xs
-  in
-    (traversed_x::xs',(implAssTable,sharingTable))
-  end
+traverse _ (implAssTable,sharingTable) _ = ([],(implAssTable,sharingTable))
+and
+ traverse_children ctxt (children,(implAssTable,sharingTable)) [] = (children,(implAssTable,sharingTable)) |
+ traverse_children ctxt (children,(implAssTable,sharingTable)) (x::xs) =
+   let
+     val _ = @{print}("taverse child",x)
+     val (child,(implAssTable,sharingTable)) = traverse ctxt (implAssTable,sharingTable) x
+   in
+     traverse_children ctxt (child @ children,(implAssTable,sharingTable)) xs 
+   end
+
 
 fun process ctxt t params = 
 let
-  val ([t'],(implAssTable,sharingTable)) = traverse ctxt (Symtab.empty,Symtab.empty) [t]
+  val ([t'],(implAssTable,sharingTable)) = traverse ctxt (Symtab.empty,Symtab.empty) t
   val ass = Symtab.dest implAssTable |> map snd
 in (ass,t')  end
 

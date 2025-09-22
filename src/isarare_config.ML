@@ -10,7 +10,7 @@ sig
   datatype proof_strategy = None | Minimum | Full | TACAS_Autoprove 
   datatype proof_strategy_theory = All | Strings | Arith | BV
 
-  (*Options*)      
+  (*User Options*)      
   val verbose: bool Config.T
   val debug: bool Config.T
   val ruleFormat: string Config.T
@@ -18,7 +18,13 @@ sig
   val listsAsVar: bool Config.T
   val proofStrategy: string Config.T
   val proofStrategyTheory: string Config.T
+  val lemmasReadyForReconstruction: bool Config.T
+  val seperateLemmasForTypes: bool Config.T
   val IsaRAREHome: string Config.T
+
+  (*Internal Options*)
+  val named_theorems: Proof.context -> bool 
+  val print_nomatch: Proof.context -> bool 
 
   (*Diagnostics*)
   val verbose_msg: Proof.context -> ('a -> string) -> 'a -> unit
@@ -43,9 +49,14 @@ val debug = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_debug\<close> (K 
 val ruleFormat = Attrib.setup_config_string \<^binding>\<open>IsaRARE_ruleFormat\<close> (K "RARE")
 val implAssump = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_implAssump\<close> (K true)
 val listsAsVar = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_listsAsVar\<close> (K false)
+val seperateLemmasForTypes = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_seperateLemmasForTypes\<close> (K true)
 val proofStrategy = Attrib.setup_config_string \<^binding>\<open>IsaRARE_proofStrategy\<close> (K "Full")
 val proofStrategyTheory = Attrib.setup_config_string \<^binding>\<open>IsaRARE_proofStrategyTheory\<close> (K "All")
+val lemmasReadyForReconstruction = Attrib.setup_config_bool \<^binding>\<open>IsaRARE_reconstruction\<close> (K false)
 val IsaRAREHome = Attrib.setup_config_string \<^binding>\<open>IsaRARE_HOME\<close> (K "")
+
+fun named_theorems ctxt = (Config.get ctxt lemmasReadyForReconstruction)
+fun print_nomatch ctxt = (Config.get ctxt lemmasReadyForReconstruction)
 
 val str_to_proof_strategy = [("None",None),("Minimum",Minimum),("Full", Full),("TACAS_Autoprove",TACAS_Autoprove)]
 val str_to_proof_strategy_theory = [("All",All),("Strings",Strings),("Arith",Arith),("BV",BV)]
@@ -74,6 +85,8 @@ fun print_options ctxt =
  "implicit assumption generation: " ^ Bool.toString (Config.get ctxt implAssump) ^ "\n" ^ 
  "lists are treated as variables: " ^ Bool.toString (Config.get ctxt listsAsVar) ^ "\n" ^ 
  "the proof strategy is set to: " ^  (Config.get ctxt proofStrategy) ^ "\n" ^ 
- "the proof theory strategy is set to: " ^  (Config.get ctxt proofStrategyTheory) ^ "\n"
+ "the proof theory strategy is set to: " ^  (Config.get ctxt proofStrategyTheory) ^ "\n" ^
+ "lemmas are in the right form to use them for reconstruction (makes them a bit harder to read): " ^
+ Bool.toString (Config.get ctxt lemmasReadyForReconstruction) ^ "\n" 
 
 end;

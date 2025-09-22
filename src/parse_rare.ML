@@ -120,7 +120,7 @@ val str_of = Pretty.unformatted_string_of o pretty_rewrite_rule
 (*
  Parses the next token from a list of string characters,  either starting with an opening
  parenthesis until the matching closing parenthesis or if the first character is not an opening
- parenthesis it returns everything until the first white space or closing parenthesis.
+ parenthesis it returns everything up to the first white space or closing parenthesis.
 
  E.g., parse_token NONE "((s1 ?) (s2 ? :list) (m Int))"
  is Finished (((s1 ?) (s2 ? :list) (m Int)),"")
