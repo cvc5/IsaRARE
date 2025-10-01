@@ -3,7 +3,7 @@
 
 This file provides functionality to add implicit assumptions to a SMTLIB Tree:
 
- Some operators have restrictions on the values they are defined on in SMTLIB that their
+ Some operators have restrictions on the values they are defined on in SMTLIB, that their
  corresponding operator in Isabelle does not have. This is particularly
  often the case for the theory of bit-vectors. E.g., extract i j s is restricted to values
  0 \<le> i \<le> j \<le> size s and the bid-width of the output is size(i) + 1 - j. 
