@@ -1,7 +1,7 @@
 
-session "IsaRARE" (main) = "HOL-CVC" +
+session "IsaRARE" (main) = "HOL" +
  description
-  "IsaRARE transforms rewrite rules in the RARE language into Isabelle lemmas"
+  "IsaRARE transforms rewrite rules in the RARE language into Isabelle lemmas. Requires AFP."
  options [document = pdf, document_output = "docs", quick_and_dirty]
  sessions
   "HOL-Library"
@@ -23,7 +23,7 @@ session "IsaRARE-Tests" in "Tests" = "IsaRARE" +
   theories
   "IsaRARE_Tests"
 
-session "IsaRARE-Results" in "Tests/Regression" = "HOL-CVC" +
+session "IsaRARE-Results" in "Tests/Regression" = "HOL" +
 theories
   "EUF_Rewrites"
   "Set_Rewrites"
@@ -32,7 +32,7 @@ theories
   "String_Rewrites"
   "Bitvector_Rewrites_Proven"
 
-session "IsaRARE-Results-Autoproven" in "Tests/Regression/Autoproven" = "HOL-CVC" +
+session "IsaRARE-Results-Autoproven" in "Tests/Regression/Autoproven" = "HOL" +
 theories
   "EUF_Rewrites_Autoproven"
   "Set_Rewrites_Autoproven"
