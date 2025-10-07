@@ -1,4 +1,4 @@
-(*  Title:      IsaRARE/abstract_type_parser.ML
+(*  Title:      IsaRARE/parse_rare.ML
     Author:     Hanna Lachnitt, Stanford University
 
 Additional type and term parser for RARE for its features that extend SMT-LIB

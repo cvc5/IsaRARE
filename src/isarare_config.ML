@@ -81,7 +81,7 @@ fun print_options ctxt =
  "home directory set to: " ^ (Config.get ctxt IsaRAREHome) ^ "\n" ^ 
  "verbose: " ^ Bool.toString (Config.get ctxt verbose) ^ "\n" ^ 
  "debug: " ^ Bool.toString (Config.get ctxt debug) ^ "\n" ^ 
- "rule format: " ^ (Config.get ctxt ruleFormat) ^ "\n" ^
+ "rule format " ^ (Config.get ctxt ruleFormat) ^ "\n" ^
  "implicit assumption generation: " ^ Bool.toString (Config.get ctxt implAssump) ^ "\n" ^ 
  "lists are treated as variables: " ^ Bool.toString (Config.get ctxt listsAsVar) ^ "\n" ^ 
  "the proof strategy is set to: " ^  (Config.get ctxt proofStrategy) ^ "\n" ^ 

@@ -1,4 +1,4 @@
-(*  Title:      IsaRARE/rare_impl_assum.ML
+(*  Title:      IsaRARE/write_rewrite_as_lemma.ML
     Author:     Hanna Lachnitt, Stanford University
 
 This file provides functionality to implicit assumptions to a SMTLIB Tree:
