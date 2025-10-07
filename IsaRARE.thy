@@ -27,7 +27,7 @@ merely a convenience solution since loading the Word library can take a while.
 \<close>
 
 theory IsaRARE
-  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" (*HOL.SMT_CVC_Word *) HOL.SMT_CVC_Extension
+  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" (*HOL.SMT_CVC_Word *) HOL.SMT_CVC_Extension Word_Lib.Reversed_Bit_Lists
   keywords "parse_rare_file" "parse_rare" "print_IsaRARE_options" :: diag
 begin
 
@@ -86,7 +86,10 @@ text \<open>
 This file contains parser functionality for the extensions to SMT-LIB RARE offers. Mostly,
 this concerns parsing ``approximate'' types (see Section \ref{sec:rare}). 
 \<close>
-
+ML_file \<open>src/rewrite_rule_ast.ML\<close>
+ML_file \<open>src/alf_ast.ML\<close>
+ML_file \<open>src/alf_lexer.ML\<close>
+ML_file \<open>src/alf_parser.ML\<close>
 
 ML_file \<open>src/parse_rare.ML\<close>
 

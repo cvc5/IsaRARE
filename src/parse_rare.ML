@@ -35,51 +35,21 @@ sig
   exception PARSE of string
   exception TREE of string
 
-  datatype rule_type = DEFINE_RULE | DEFINE_COND_RULE | DEFINE_RULE_STAR
-  datatype par = Par of SMTLIB.tree | ListPar of SMTLIB.tree
-
-  type rewrite_rule =
-  {
-    rule_type : rule_type,
-    rule_name : string,
-    params : par list,
-    let_defs : (SMTLIB.tree * SMTLIB.tree) list option,
-    precondition : SMTLIB.tree option,
-    match : SMTLIB.tree,
-    target : SMTLIB.tree,
-    context_expr : SMTLIB.tree option
-  }
-
-  val pretty_rewrite_rule: rewrite_rule -> Pretty.T
-  val str_of: rewrite_rule -> string
+  val pretty_rewrite_rule: REWRITE_RULE_AST.rewrite_rule -> Pretty.T
+  val str_of: REWRITE_RULE_AST.rewrite_rule -> string
 
   val lex_rewrites : Proof.context -> string list -> (int * string) list
-  val parse_rewrites : Proof.context -> (int * string) list -> rewrite_rule list
+  val parse_rewrites : Proof.context -> (int * string) list -> REWRITE_RULE_AST.rewrite_rule list
 
 end;
 
 structure Parse_RARE: PARSE_RARE =
 struct
 
+open REWRITE_RULE_AST
+
 exception PARSE of string
 exception TREE of string
-
-
-datatype rule_type = DEFINE_RULE | DEFINE_COND_RULE | DEFINE_RULE_STAR
-datatype par = Par of SMTLIB.tree | ListPar of SMTLIB.tree
-
-type rewrite_rule =
-{
-  rule_type : rule_type,
-  rule_name : string,
-  params : par list,
-  let_defs : (SMTLIB.tree * SMTLIB.tree) list option,
-  precondition : SMTLIB.tree option,
-  match : SMTLIB.tree,
-  target : SMTLIB.tree,
-  context_expr : SMTLIB.tree option
-}
-
 
 (* Printing *)
 
@@ -251,19 +221,6 @@ fun type_parser _ (("d"::"e"::"f"::"i"::"n"::"e"::"-"::"r"::"u"::"l"::"e"::"*"::
                   ::"r"::"u"::"l"::"e"::cs)) = (DEFINE_COND_RULE,cs) |
   type_parser l _ = raise_parser_error l "Could not read type!"
 
-(* In alf the rule type is determined by annotations and not by a keyword. However, there is some
-syntax sugar that allows to write declare-axiom for rules without any conditions. Since the type
-depends on whether a :rare-fixed-point or a :premises ((= F false)) term is found later in the
-rule we cannot determine it here yet. *)
-
-datatype alf_rule_type = ALF_AXIOM | ALF_RULE
-
-fun alf_type_parser _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"a"::"x"::"i"::"o"::"m":: cs)) =
-    (ALF_AXIOM,cs) |
-  alf_type_parser _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"r"::"u"::"l"::"e":: cs)) =
-    (ALF_RULE,cs) |
-  alf_type_parser l _ = raise_parser_error l "Could not read type of alf rule!"
-
 (* Rule name *)
 
 (*
@@ -392,75 +349,12 @@ in
 
 end
 
-
-
-
-fun parse_single_alf_rule ctxt (l,cs) =
-let
-  
-  fun debug_msg ctxt msg f (x,t) cs =
-  ((debug_msg_parser ctxt ("Parsed " ^ msg ^ ". Token parsed in is: " ^  f t );((x,t),cs)))
-
-  val (((((_,alfT),rname),rparams),rexpressions),cs')
-    = cs
-      |>
-      Scan.succeed (debug_msg_parser ctxt ("Start parsing alf rule in line " ^ Int.toString(l) ))
-      --| (Scan.one (fn c => c = "("))
-      --| ignore_chars l " "
-      -- alf_type_parser l
-      --| least_one_char l "No whitespace after type found." " "
-      -- name_parser l
-      :|-- debug_msg ctxt "name" I
-      --| least_one_char l "No whitespace after name found." " "
-      --  param_parser l
-      :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map str_of_par xs))
-      -- Scan.repeat
-        ((Scan.many1 (curry (op =) " "))
-        |-- (expression_parser l))
-      :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
-      --| ignore_chars l " "
-      --| (Scan.one (fn c => c = ")"))
-      --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")
-
-  fun seperate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "conclusion")::[c]) = (DEFINE_COND_RULE,SOME p,c) |
-      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c,SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) | (*TODO: Ask Andy does this has the context expr as argument? Or do thy not exist anymore?*)
-      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c]) = (DEFINE_RULE,NONE,c) |
-      seperate_expr_rule xs =(@{print}("xs",xs);
-        raise_parser_error l ("Found "
-        ^ Int.toString(length xs) ^ " expressions in rule but expected less or more than that."))
-
-  fun seperate_expr_axiom (c::[SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) |
-      seperate_expr_axiom [c] = (DEFINE_RULE,NONE,c) |
-      seperate_expr_axiom xs = (@{print}("xs",xs);
-        raise_parser_error l ("Found "
-        ^ Int.toString(length xs) ^ " expressions in axiom but expected less or more than that."))
-
-
-  val (rtyp,rprecondition,conclusion) = rexpressions |> (if alfT = ALF_RULE then seperate_expr_rule else seperate_expr_axiom)
-
-  val (rmatch,rtarget) = (fn (SMTLIB.S [SMTLIB.Sym "=", x,y]) => (x,y) | _ => raise_parser_error l "" ) conclusion
-in 
-
-({
-    rule_type = rtyp,
-    rule_name = rname,
-    params= rparams,
-    let_defs = NONE,
-    precondition = rprecondition,
-    match = rmatch,
-    target = rtarget,
-    context_expr = NONE
-  } : rewrite_rule)
-
-end
-
-
 fun parse_rewrites ctxt xs =
    map ((if Config.get ctxt IsaRARE_Config.ruleFormat = "RARE"
          then parse_single_rule
          else if Config.get ctxt IsaRARE_Config.ruleFormat = "ALF"
-         then parse_single_alf_rule
+         then ALF_PARSER.parse_single_alf_rule
          else raise_parser_error 0 "Unkown proof format set") ctxt)
-   (map (fn (i,x) => (i,raw_explode x)) xs)
+       (map (fn (i,x) => (i,raw_explode x)) xs)
 
 end;
