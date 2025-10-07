@@ -245,6 +245,9 @@ val _ =  Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare_file\<cl
 declare[[IsaRARE_debug=false]]
 
 
+(*parse_rare_file "~/Downloads/int2.smt2" "HOL.Real" "TestKey2"*)
+
+
 section \<open>Examples\label{sec:examples}\<close>
 
 text \<open>
