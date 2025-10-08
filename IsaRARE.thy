@@ -87,10 +87,10 @@ This file contains parser functionality for the extensions to SMT-LIB RARE offer
 this concerns parsing approximate types (see Section \ref{sec:rare}). 
 \<close>
 ML_file \<open>src/rewrite_rule_ast.ML\<close>
+ML_file \<open>src/parser_utils.ML\<close>
 ML_file \<open>src/alf_ast.ML\<close>
 ML_file \<open>src/alf_lexer.ML\<close>
 ML_file \<open>src/alf_parser.ML\<close>
-
 ML_file \<open>src/parse_rare.ML\<close>
 
 text \<open>

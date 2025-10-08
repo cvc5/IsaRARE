@@ -5,7 +5,7 @@
 signature RARE_LISTS =
 sig
   exception WRITE_LEMMA_FROM_DSL_REWRITE of string
-  val rare_lists : Parse_RARE.par list -> term -> Proof.context -> term
+  val rare_lists : REWRITE_RULE_AST.par list -> term -> Proof.context -> term
 end;
 
 structure RARE_Lists: RARE_LISTS =
@@ -95,8 +95,8 @@ mk_nary l1 _ _ _ _ = l1
 fun rare_lists params term ctxt =
 let 
   val param_names =
-    map_filter (fn (Parse_RARE.Par _) => NONE |
-               (Parse_RARE.ListPar (SMTLIB.S[SMTLIB.Sym name,_])) => SOME name)
+    map_filter (fn (REWRITE_RULE_AST.Par _) => NONE |
+               (REWRITE_RULE_AST.ListPar (SMTLIB.S[SMTLIB.Sym name,_])) => SOME name)
     params
   val _ =  IsaRARE_Config.debug_msg_raw ctxt (fn () => \<^print> ("The following list parameters were found: ", param_names))
   val nary_term = mk_nary term param_names [] 0 (length params-1)

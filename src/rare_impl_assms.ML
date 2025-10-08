@@ -21,7 +21,7 @@ so we use a data structure to make sure we don't have them double.
 signature RARE_IMPL_ASSMS =
 sig
   exception IMPL_ASSMS of string
-  val process : Proof.context -> SMTLIB.tree -> Parse_RARE.par list -> SMTLIB.tree list * SMTLIB.tree
+  val process : Proof.context -> SMTLIB.tree -> REWRITE_RULE_AST.par list -> SMTLIB.tree list * SMTLIB.tree
 end;
 
 structure RARE_Impl_Assms: RARE_IMPL_ASSMS =

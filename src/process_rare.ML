@@ -15,7 +15,7 @@ sig
     rule_name : string,
     rule_body : rewrite_rule_term list
   }
-  val process_rule : Proof.context -> Parse_RARE.rewrite_rule -> rewrite_rule_lemma
+  val process_rule : Proof.context -> REWRITE_RULE_AST.rewrite_rule -> rewrite_rule_lemma
 
 
   (*val process_tree : Parse_RARE.rewrite_rule -> thm 
@@ -58,21 +58,21 @@ fun let_tree tree NONE = tree |
 
 
 fun quant_tree [] tree = tree |
-    quant_tree params tree = SMTLIB.S [SMTLIB.Sym "forall", SMTLIB.S (map (fn (Par p) => p | (ListPar p) => p) params), tree]
+    quant_tree params tree = SMTLIB.S [SMTLIB.Sym "forall", SMTLIB.S (map (fn (REWRITE_RULE_AST.Par p) => p | (REWRITE_RULE_AST.ListPar p) => p) params), tree]
 
 fun eliminate_context t (SMTLIB.S ts) = (SMTLIB.S (map (eliminate_context t) ts)) |
     eliminate_context t (SMTLIB.Sym "_") = t |
     eliminate_context t x = x
 
-fun combine_tree (rule as ({rule_type=DEFINE_RULE, precondition=NONE, context_expr = NONE, ...} : rewrite_rule)) =
+fun combine_tree (rule as ({rule_type=DEFINE_RULE, precondition=NONE, context_expr = NONE, ...} : REWRITE_RULE_AST.rewrite_rule)) =
    SMTLIB.S [SMTLIB.Sym "=", #match rule, #target rule] |
- combine_tree (rule as ({rule_type=DEFINE_COND_RULE, precondition=(SOME p), context_expr = NONE, ...} : rewrite_rule)) = 
+ combine_tree (rule as ({rule_type=DEFINE_COND_RULE, precondition=(SOME p), context_expr = NONE, ...} : REWRITE_RULE_AST.rewrite_rule)) = 
     SMTLIB.S [SMTLIB.Sym "implies", p, SMTLIB.S [SMTLIB.Sym "=", #match rule, #target rule]] |
- combine_tree (rule as ({rule_type=DEFINE_RULE_STAR, precondition=NONE, context_expr = NONE, ...} : rewrite_rule)) = 
+ combine_tree (rule as ({rule_type=DEFINE_RULE_STAR, precondition=NONE, context_expr = NONE, ...} : REWRITE_RULE_AST.rewrite_rule)) = 
     SMTLIB.S [SMTLIB.Sym "=", #match rule, #target rule] |
- combine_tree (rule as ({rule_type=DEFINE_RULE_STAR, precondition=NONE, context_expr = (SOME c), ...} : rewrite_rule)) = 
+ combine_tree (rule as ({rule_type=DEFINE_RULE_STAR, precondition=NONE, context_expr = (SOME c), ...} : REWRITE_RULE_AST.rewrite_rule)) = 
     SMTLIB.S [SMTLIB.Sym "=", #match rule, eliminate_context (#target rule) c] |
- combine_tree ({rule_name, ...} : rewrite_rule) = raise PARSE("Rule " ^ rule_name ^ " has wrong type and could not be processed!")
+ combine_tree ({rule_name, ...} : REWRITE_RULE_AST.rewrite_rule) = raise PARSER_UTILS.PARSE("Rule " ^ rule_name ^ " has wrong type and could not be processed!")
 
 (*In case we want to print one lemma per type seperateLemmasForTypes*)
 (*params might contain schematic types*)
@@ -137,7 +137,7 @@ in
 end
 
 
-fun process_rule ctxt (rule as ({rule_name, params, let_defs, ...} : rewrite_rule)) =
+fun process_rule ctxt (rule as ({rule_name, params, let_defs, ...} : REWRITE_RULE_AST.rewrite_rule)) =
    let
      val _ = IsaRARE_Config.debug_msg ctxt (fn _ => "Processing rule " ^ rule_name) []
 
