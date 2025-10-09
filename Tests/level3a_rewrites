@@ -1,0 +1,34 @@
+;no implicit assumptions
+;complex approximate types
+
+;arrays
+(define-rule array-read-over-write ((t ?Array) (i ?) (e ?))
+  (select (store t i e) i) e)
+(define-cond-rule array-read-over-write2 ((t ?Array) (i ?) (j ?) (e ?))
+  (not (= i j)) (select (store t i e) j) (select t j))
+(define-rule array-store-overwrite ((t ?Array) (i ?) (e ?) (f ?))
+  (store (store t i e) i f)
+  (store t i f))
+(define-rule array-store-self ((t ?Array) (i ?))
+  (store t i (select t i))
+  t)
+  
+;sets
+(define-rule sets-subset-elim ((x ?Set) (y ?Set))
+  (set.subset x y)
+  (= (set.union x y) y))
+(define-rule sets-union-comm ((x ?Set) (y ?Set))
+  (set.union x y)
+  (set.union y x))
+(define-rule sets-inter-comm ((x ?Set) (y ?Set))
+  (set.inter x y)
+  (set.inter y x))
+(define-rule sets-inter-member ((x ?) (y ?Set) (z ?Set))
+  (set.member x (set.inter y z))
+  (and (set.member x y) (set.member x z)))
+(define-rule sets-minus-member ((x ?) (y ?Set) (z ?Set))
+  (set.member x (set.minus y z))
+  (and (set.member x y) (not (set.member x z))))
+(define-rule sets-union-member ((x ?) (y ?Set) (z ?Set))
+  (set.member x (set.union y z))
+  (or (set.member x y) (set.member x z)))
