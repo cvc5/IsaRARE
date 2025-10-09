@@ -16,17 +16,6 @@ struct
 
 (* Parser Components *)
 
-(*
- Lemma names in Isabelle cannot have dashes in them, so they must be replaced by underscores
- when parsing the name of a rewrite
-*)
-
-fun alf_name_parser l cs =
-  Scan.catch Scan.many (curry (op <>) " ") cs
-  |>> map (fn "-" => "_" | x => x)
-  |>> implode
-  handle (Fail _) => PARSER_UTILS.raise_parser_error l "Could not parse in rule name"
-
 (* Rule parameters *)
 
 (*
@@ -69,7 +58,7 @@ fun parse_single_alf_rule ctxt (l, cs) =
 let
   
   fun debug_msg ctxt msg f (x,t) cs =
-  ((PARSER_UTILS.debug_msg_parser ctxt ("Parsed " ^ msg ^ ". Token parsed in is: " ^  f t );((x,t),cs)))
+  ((PARSER_UTILS.debug_msg_parser ctxt ("Parsed " ^ msg ^ ". Token parsed is: " ^  f t );((x,t),cs)))
 
   val (((((_,alfT),rname),rparams),rexpressions),cs')
     = cs
@@ -77,13 +66,13 @@ let
       Scan.succeed (PARSER_UTILS.debug_msg_parser ctxt ("Start parsing alf rule in line " ^ Int.toString(l) ))
       --| (Scan.one (fn c => c = "("))
       --| PARSER_UTILS.ignore_chars l " "
-      -- ALF_LEXER.alf_type_lexer l
+      -- ALF_LEXER.alf_declare_rule_lexer l
       --| PARSER_UTILS.least_one_char l "No whitespace after type found." " "
-      -- alf_name_parser l
+      -- ALF_LEXER.alf_name_lexer l
       :|-- debug_msg ctxt "name" I
       --| PARSER_UTILS.least_one_char l "No whitespace after name found." " "
       (* TODO: param_parser depends on parse_next_term, which should be something *)
-(*                language dependent *)
+      (*       language dependent *)
       --  alf_param_parser l
       :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map PARSER_UTILS.str_of_par xs))
       -- Scan.repeat
@@ -94,21 +83,29 @@ let
       --| (Scan.one (fn c => c = ")"))
       --| (fn cs => if cs = [] then Scan.succeed [] cs else PARSER_UTILS.raise_parser_error l "Text found after end of rule")
 
-  fun seperate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "conclusion")::[c]) = (REWRITE_RULE_AST.DEFINE_COND_RULE,SOME p,c) |
-      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c,SMTLIB.Key "rare-fixed-point"]) = (REWRITE_RULE_AST.DEFINE_RULE_STAR,NONE,c) | (*TODO: Ask Andy does this has the context expr as argument? Or do thy not exist anymore?*)
-      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c]) = (REWRITE_RULE_AST.DEFINE_RULE,NONE,c) |
+  (* Conversion from Eunoia AST to RARE rewrite rule. *)
+  (* fun seperate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "conclusion")::[c]) = (REWRITE_RULE_AST.DEFINE_COND_RULE,SOME p,c) | *)
+  (*     seperate_expr_rule ((SMTLIB.Key "conclusion")::[c,SMTLIB.Key "rare-fixed-point"]) = (REWRITE_RULE_AST.DEFINE_RULE_STAR,NONE,c) | (*TODO: Ask Andy does this has the context expr as argument? Or do thy not exist anymore?*) *)
+  (*     seperate_expr_rule ((SMTLIB.Key "conclusion")::[c]) = (REWRITE_RULE_AST.DEFINE_RULE,NONE,c) | *)
+  (*     seperate_expr_rule xs =(@{print}("xs",xs); *)
+  (*       PARSER_UTILS.raise_parser_error l ("Found " *)
+  (*       ^ Int.toString(length xs) ^ " expressions in rule but expected less or more than that.")) *)
+
+  fun seperate_expr_rule ((SMTLIB.Key "args")::p::(SMTLIB.Key "conclusion")::[c]) = (REWRITE_RULE_AST.DEFINE_RULE,NONE,c) |
       seperate_expr_rule xs =(@{print}("xs",xs);
         PARSER_UTILS.raise_parser_error l ("Found "
         ^ Int.toString(length xs) ^ " expressions in rule but expected less or more than that."))
 
-  fun seperate_expr_axiom (c::[SMTLIB.Key "rare-fixed-point"]) = (REWRITE_RULE_AST.DEFINE_RULE_STAR,NONE,c) |
-      seperate_expr_axiom [c] = (REWRITE_RULE_AST.DEFINE_RULE,NONE,c) |
-      seperate_expr_axiom xs = (@{print}("xs",xs);
-        PARSER_UTILS.raise_parser_error l ("Found "
-        ^ Int.toString(length xs) ^ " expressions in axiom but expected less or more than that."))
 
-
-  val (rtyp,rprecondition,conclusion) = rexpressions |> (if alfT = ALF_AST.ALF_RULE then seperate_expr_rule else seperate_expr_axiom)
+  (* TODO: not for today's Eunoia *)
+  (* fun seperate_expr_axiom (c::[SMTLIB.Key "rare-fixed-point"]) = (REWRITE_RULE_AST.DEFINE_RULE_STAR,NONE,c) | *)
+  (*     seperate_expr_axiom [c] = (REWRITE_RULE_AST.DEFINE_RULE,NONE,c) | *)
+  (*     seperate_expr_axiom xs = (@{print}("xs",xs); *)
+  (*       PARSER_UTILS.raise_parser_error l ("Found " *)
+  (*       ^ Int.toString(length xs) ^ " expressions in axiom but expected less or more than that.")) *)  
+  (* val (rtyp,rprecondition,conclusion) = rexpressions |> (if alfT = ALF_AST.ALF_RULE then seperate_expr_rule else seperate_expr_axiom) *)
+  
+  val (rtyp,rprecondition,conclusion) = rexpressions |> seperate_expr_rule
 
   val (rmatch,rtarget) = (fn (SMTLIB.S [SMTLIB.Sym "=", x,y]) => (x,y) | _ => PARSER_UTILS.raise_parser_error l "" ) conclusion
 in
