@@ -1,32 +1,92 @@
 ;without approximate types
 ;without lists
 
-(define-rule bool-double-not-elim ((t Bool)) (not (not t)) t)
+;arith without gradual types
+;int
+(define-rule arith-int-div-one-int ((t Int)) (div t 1) t)
+(define-rule arith-neg-neg-one-int ((t Int)) (* (- 1) (* (- 1) t)) t)
+(define-rule arith-elim-uminus-int ((t Int)) (- t) (* (- 1) t))
+(define-rule arith-elim-minus-int ((t Int) (s Int)) (- t s) (+ t (* (- 1) s)))
+(define-rule arith-elim-gt-int ((t Int) (s Int)) (> t s) (not (<= t s)))
+(define-rule arith-elim-lt-int ((t Int) (s Int)) (< t s) (not (>= t s)))
+(define-rule arith-elim-leq-int ((t Int) (s Int)) (<= t s) (>= s t))
+(define-rule arith-leq-norm-int ((t Int) (s Int)) (<= t s) (not (>= t (+ s 1))))
+(define-rule arith-geq-tighten-int ((t Int) (s Int)) (not (>= t s)) (>= s (+ t 1)))
+(define-rule arith-geq-norm-int ((t Int) (s Int)) (>= t s) (>= (- t s) 0))
+(define-rule arith-refl-leq-int ((t Int)) (<= t t) true)
+(define-rule arith-refl-lt-int ((t Int)) (< t t) false)
+(define-rule arith-refl-geq-int ((t Int)) (>= t t) true)
+(define-rule arith-refl-gt-int ((t Int)) (> t t) false)
 
+;real
+(define-rule arith-neg-neg-one-real ((t Real)) (* (- 1.0) (* (- 1.0) t)) t)
+(define-rule arith-elim-uminus-real ((t Real)) (- t) (* (- 1.0) t))
+(define-rule arith-elim-minus-real ((t Real) (s Real)) (- t s) (+ t (* (- 1.0) s)))
+(define-rule arith-elim-gt-real ((t Real) (s Real)) (> t s) (not (<= t s)))
+(define-rule arith-elim-lt-real ((t Real) (s Real)) (< t s) (not (>= t s)))
+(define-rule arith-elim-leq-real ((t Real) (s Real)) (<= t s) (>= s t))
+(define-rule arith-geq-norm-real ((t Real) (s Real)) (>= t s) (>= (- t s) 0.0))
+(define-rule arith-refl-leq-real ((t Real)) (<= t t) true)
+(define-rule arith-refl-lt-real ((t Real)) (< t t) false)
+(define-rule arith-refl-geq-real ((t Real)) (>= t t) true)
+(define-rule arith-refl-gt-real ((t Real)) (> t t) false)
+
+
+;boolean
+(define-rule bool-double-not-elim ((t Bool)) (not (not t)) t)
 (define-rule bool-eq-true ((t Bool)) (= t true) t)
 (define-rule bool-eq-false ((t Bool)) (= t false) (not t))
 (define-rule bool-eq-nrefl ((x Bool)) (= x (not x)) false)
-
 (define-rule bool-impl-false1 ((t Bool)) (=> t false) (not t))
 (define-rule bool-impl-false2 ((t Bool)) (=> false t) true)
 (define-rule bool-impl-true1 ((t Bool)) (=> t true) true)
 (define-rule bool-impl-true2 ((t Bool)) (=> true t) t)
 (define-rule bool-impl-elim ((t Bool) (s Bool)) (=> t s) (or (not t) s))
-
 (define-rule bool-xor-refl ((x Bool)) (xor x x) false)
 (define-rule bool-xor-nrefl ((x Bool)) (xor x (not x)) true)
 (define-rule bool-xor-false ((x Bool)) (xor x false) x)
 (define-rule bool-xor-true ((x Bool)) (xor x true) (not x))
 (define-rule bool-xor-comm ((x Bool) (y Bool)) (xor x y) (xor y x))
 (define-rule bool-xor-elim ((x Bool) (y Bool)) (xor x y) (not (= x y)))
-
 (define-cond-rule ite-neg-branch ((c Bool) (x Bool) (y Bool)) (= (not y) x) (ite c x y) (= c x))
-
 (define-rule ite-then-true ((c Bool) (x Bool)) (ite c true x) (or c x))
 (define-rule ite-else-false ((c Bool) (x Bool)) (ite c x false) (and c x))
 (define-rule ite-then-false ((c Bool) (x Bool)) (ite c false x) (and (not c) x))
 (define-rule ite-else-true ((c Bool) (x Bool)) (ite c x true) (or (not c) x))
-
 (define-rule ite-then-lookahead-self ((c Bool) (x Bool)) (ite c c x) (ite c true x))
 (define-rule ite-else-lookahead-self ((c Bool) (x Bool)) (ite c x c) (ite c x false))
+
+
+;strings
+(define-rule str-substr-empty-str ((n Int) (m Int)) (str.substr "" n m) "")
+(define-cond-rule str-substr-empty-range ((x String) (n Int) (m Int)) (>= 0 m) (str.substr x n m) "")
+(define-cond-rule str-substr-empty-start ((x String) (n Int) (m Int)) (>= n (str.len x)) (str.substr x n m) "")
+(define-cond-rule str-substr-empty-start-neg ((x String) (n Int) (m Int)) (< n 0) (str.substr x n m) "")
+(define-cond-rule str-substr-eq-empty ((s String) (n Int) (m Int))
+  (and (= n 0) (> m n))
+  (= (str.substr s n m) "")
+  (= s ""))
+(define-rule re-in-empty ((t String)) (str.in_re t re.none) false)
+(define-rule re-in-sigma ((t String)) (str.in_re t re.allchar) (= (str.len t) 1))
+(define-rule re-in-sigma-star ((t String)) (str.in_re t (re.* re.allchar)) true)
+(define-rule re-in-cstring ((t String) (s String)) (str.in_re t (str.to_re s)) (= t s))
+(define-rule re-in-comp ((t String) (r RegLan)) (str.in_re t (re.comp r)) (not (str.in_re t r)))
+(define-cond-rule str-substr-combine1 ((s String) (n1 Int) (m1 Int) (n2 Int) (m2 Int))
+ (and (>= n1 0) (>= n2 0) (>= (- m2 (- m1 n2)) 0))
+  (str.substr (str.substr s n1 m1) n2 m2)
+  (str.substr s (+ n1 n2) (- m1 n2)))
+(define-cond-rule str-substr-combine2 ((s String) (n1 Int) (m1 Int) (n2 Int) (m2 Int))
+ (and (>= n1 0) (>= n2 0) (>= (- (- m1 n2) m2) 0))
+  (str.substr (str.substr s n1 m1) n2 m2)
+  (str.substr s (+ n1 n2) m2))
+(define-cond-rule str-contains-leq-len-eq ((x String) (y String))
+  (<= (str.len x) (str.len y))
+  (str.contains x y)
+  (= x y))
+(define-rule re-all-elim () re.all (re.* re.allchar))
+(define-rule re-opt-elim ((x RegLan)) (re.opt x) (re.union (str.to_re "") x))
+(define-cond-rule str-in-re-range-elim ((s String) (c1 String) (c2 String))
+  (and (= (str.len c1) 1) (= (str.len c2) 1))
+  (str.in_re s (re.range c1 c2))
+  (and (<= (str.to_code c1) (str.to_code s)) (<= (str.to_code s) (str.to_code c2))))
 

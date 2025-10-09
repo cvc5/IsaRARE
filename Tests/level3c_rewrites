@@ -1,0 +1,9 @@
+(define-rule* bv-concat-flatten ((xs ?BitVec :list) (s ?BitVec) (ys ?BitVec :list) (zs ?BitVec :list)) (concat xs (concat s ys) zs) (concat xs s ys zs))
+(define-cond-rule bv-repeat-eliminate-1 ((x ?BitVec) (n Int)) (> n 1) (repeat n x) (concat x (repeat (- n 1) x)))
+
+
+(define-cond-rule bv-rotate-left-eliminate-1 ((x ?BitVec) (amount Int)) (def (n (bvsize x)) (a (mod amount n))) (not (= a 0)) (rotate_left amount x) (concat (extract (- n (+ 1 a)) 0 x) (extract (- n 1) (- n a) x)))
+
+(define-cond-rule bv-rotate-right-eliminate-1 ((x ?BitVec) (amount Int)) (def (n (bvsize x)) (a (mod amount n))) (not (= a 0)) (rotate_right amount x) (concat (extract (- a 1) 0 x) (extract (- n 1) a x)))
+
+(define-rule bv-zero-extend-eliminate ((x ?BitVec) (n Int)) (zero_extend n x) (concat (bv 0 n) x))
