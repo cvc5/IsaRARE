@@ -266,7 +266,7 @@ text \<open>
 \<close>
 
 (*<*)
-declare[[IsaRARE_HOME = "/home/lachnitt/Sources/IsaRARE/"]]
+declare[[IsaRARE_HOME = "/home/mallku/carcara/Trabajo/Rare/IsaRARE/"]]
 
 declare[[IsaRARE_debug]]
 declare[[ML_print_depth=100]]

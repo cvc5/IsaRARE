@@ -16,6 +16,8 @@ struct
 
 (* Parser Components *)
 
+val is_space = (curry (op =) " ")
+
 (* Rule parameters *)
 
 (*
@@ -23,22 +25,35 @@ parameter are a list of SMT-LIB terms in parenthesis, the single parameters
 are separated by a single whitespace from each other. Parameters can have
 attributes starting with a colon. For now only the attribute is :list.
 *)
+fun remove_type [] = NONE (*TODO: check if this item is (<name> Type)*)
+
 fun alf_parse_par l (par:string) = (
-case String.tokens (curry (op =) #":") par of
-  [_] => (REWRITE_RULE_AST.Par (PARSER_UTILS.get_smtlib_term l [par])) |
+case String.tokens (curry (op =) #":") par |> @{print} of
+  [k] =>   (REWRITE_RULE_AST.Par (PARSER_UTILS.get_smtlib_term l [par])) |
   [x,y] => if String.isPrefix "list" y
              andalso Library.translate_string (fn " " => "" | x => x) y = "list)"
-           then (REWRITE_RULE_AST.ListPar (PARSER_UTILS.get_smtlib_term l [(x ^ ")")]))
+           then  (@{print}("x",x);@{print}("y",y);(REWRITE_RULE_AST.ListPar (PARSER_UTILS.get_smtlib_term l [(x ^ ")")])))
            else PARSER_UTILS.raise_parser_error l "parameter has unknown attribute" |
   _ => PARSER_UTILS.raise_parser_error l "parameter has too many attributes")
 
-fun alf_par_parser l = (PARSER_UTILS.parse_next_term l ALF_LEXER.alf_lexer >> implode) :|-- (fn s => fn cs => if s<>"" then ((alf_parse_par l s),cs) else Scan.fail cs)
+fun alf_par_parser l = (PARSER_UTILS.parse_next_term l ALF_LEXER.alf_lexer >> implode) 
+:|-- (fn s => fn cs => if (s|> @{print}) <>"" then ( (alf_parse_par l s),cs) else Scan.fail cs)
+
+
+fun temp_restore_approx_types ys []  = [] |
+ temp_restore_approx_types ys ((REWRITE_RULE_AST.Par (SMTLIB.S [SMTLIB.Sym _, SMTLIB.Sym "Type"]))::xs) = temp_restore_approx_types ys xs |
+ temp_restore_approx_types ys ((x as REWRITE_RULE_AST.Par ( SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym b]))::xs) = if String.isSubstring "@" b 
+then REWRITE_RULE_AST.Par (SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym "?"]) :: temp_restore_approx_types ys xs else x::temp_restore_approx_types ys xs|
+ temp_restore_approx_types ys (x::xs) = x:: temp_restore_approx_types ys xs
+
+
 
 fun alf_param_parser l =
   PARSER_UTILS.expect_char l "Could not find first opening parentheses in parameter list" "(" 
-  --| (Scan.many (curry (op =) " "))
-  |-- (Scan.repeat (alf_par_parser l --| (Scan.many1 (curry (op =) " ")))
-      @@@ (Scan.option (alf_par_parser l) >> (fn NONE => [] | SOME xs => [xs])))
+  --| (Scan.many is_space)
+  |-- ((Scan.repeat ((alf_par_parser l) --| (Scan.many1 is_space)) >> temp_restore_approx_types [])
+      @@@ (Scan.option (alf_par_parser l) >> (fn NONE => [] | SOME xs => temp_restore_approx_types [] [xs])))
+
  --| PARSER_UTILS.expect_char l "Could not find final closing parentheses in parameter list" ")" 
 
 (* Expressions *)
@@ -76,7 +91,7 @@ let
       --  alf_param_parser l
       :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map PARSER_UTILS.str_of_par xs))
       -- Scan.repeat
-        ((Scan.many1 (curry (op =) " "))
+        ((Scan.many1 is_space)
         |-- (alf_expression_parser l))
       :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| PARSER_UTILS.ignore_chars l " "

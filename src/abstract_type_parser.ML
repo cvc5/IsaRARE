@@ -9,6 +9,9 @@ fun rare_type_parser (SMTLIB.Sym "?Array", [])
       = SOME (Type(\<^type_name>\<open>fun\<close>,[dummyT,Type(\<^type_name>\<open>option\<close>,[dummyT])]))
   | rare_type_parser (SMTLIB.Sym "?Set", []) = SOME (Type(\<^type_name>\<open>Set.set\<close>,[dummyT]))
   | rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
+ (*  | rare_type_parser (SMTLIB.Sym "Type", []) = SOME (dummyT)
+  | rare_type_parser (SMTLIB.Sym x, []) = SOME (dummyT)
+  | rare_type_parser (SMTLIB.Sym "@T1", []) = SOME (dummyT) *)
   | rare_type_parser _ = NONE
 
 val _ = Theory.setup (Context.theory_map (
