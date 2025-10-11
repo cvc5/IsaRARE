@@ -348,17 +348,5 @@
   :args (w1 t1)
   :conclusion (= (ubv_to_int (int_to_bv w1 t1)) (mod_total t1 (int.pow2 w1)))
 )
-(declare-rule uf-bv2nat-geq-elim ((@n0 Int) (x1 (BitVec @n0)) (n1 Int) (w1 Int))
-  :premises ((= w1 (@bvsize x1)))
-  :args (x1 n1 w1)
-  :conclusion (= (>= (ubv_to_int x1) n1) (ite (>= n1 w1) false (ite (< n1 0) true (bvuge x1 (int_to_bv w1 n1)))))
-)
-(declare-rule uf-int2bv-bvult-equiv ((@n0 Int) (@n1 Int) (t1 (BitVec @n0)) (s1 (BitVec @n1)))
-  :args (t1 s1)
-  :conclusion (= (bvult t1 s1) (< (ubv_to_int t1) (ubv_to_int s1)))
-)
-(declare-rule uf-int2bv-bvule-equiv ((@n0 Int) (@n1 Int) (t1 (BitVec @n0)) (s1 (BitVec @n1)))
-  :args (t1 s1)
-  :conclusion (= (bvule t1 s1) (<= (ubv_to_int t1) (ubv_to_int s1)))
-)
+
 
