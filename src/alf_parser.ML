@@ -41,8 +41,8 @@ fun alf_par_parser l = (PARSER_UTILS.parse_next_term l ALF_LEXER.alf_lexer >> im
 
 
 fun temp_restore_approx_types ys []  = [] |
- temp_restore_approx_types ys ((REWRITE_RULE_AST.Par (SMTLIB.S [SMTLIB.Sym _, SMTLIB.Sym "Type"]))::xs) = temp_restore_approx_types ys xs |
- temp_restore_approx_types ys ((x as REWRITE_RULE_AST.Par ( SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym b]))::xs) = if String.isSubstring "@" b 
+ temp_restore_approx_types ys ((REWRITE_RULE_AST.Par (SMTLIB.S [SMTLIB.Sym t_name, SMTLIB.Sym "Type"]))::xs) = temp_restore_approx_types ((t_name|> @{print})::ys) xs |
+ temp_restore_approx_types ys ((x as REWRITE_RULE_AST.Par ( SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym b]))::xs) = if List.exists (fn x => (x |> @{print}) = (b|> @{print})) ys
 then REWRITE_RULE_AST.Par (SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym "?"]) :: temp_restore_approx_types ys xs else x::temp_restore_approx_types ys xs|
  temp_restore_approx_types ys (x::xs) = x:: temp_restore_approx_types ys xs
 
@@ -51,8 +51,8 @@ then REWRITE_RULE_AST.Par (SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym "?"]) :: temp_rest
 fun alf_param_parser l =
   PARSER_UTILS.expect_char l "Could not find first opening parentheses in parameter list" "(" 
   --| (Scan.many is_space)
-  |-- ((Scan.repeat ((alf_par_parser l) --| (Scan.many1 is_space)) >> temp_restore_approx_types [])
-      @@@ (Scan.option (alf_par_parser l) >> (fn NONE => [] | SOME xs => temp_restore_approx_types [] [xs])))
+  |-- (((Scan.repeat ((alf_par_parser l) --| (Scan.many1 is_space)) )
+      @@@ (Scan.option (alf_par_parser l) >> (fn NONE => [] | SOME xs => [xs]))) >>  temp_restore_approx_types [])
 
  --| PARSER_UTILS.expect_char l "Could not find final closing parentheses in parameter list" ")" 
 
