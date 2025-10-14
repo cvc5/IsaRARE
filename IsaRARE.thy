@@ -182,6 +182,7 @@ ML \<open>
     val processed_smtlibTerm = parsed_lines |> map (Process_RARE.process_rule ctxt)
     val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done processing rewrites"))
     val result = processed_smtlibTerm |> map (Write_Theory.write_lemma ctxt 1) |> String.concat
+    val _ = writeln (Active.sendback_markup_command result)
     val _ = Print_Mode.with_modes [] (fn () => writeln result)
     val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done writing rewrites!"))
 
@@ -267,7 +268,6 @@ declare[[ML_print_depth=100]]
 declare[[IsaRARE_seperateLemmasForTypes = true]]
 
 (*>*)
-
 
 parse_rare_file "Tests/level0_rewrites" "HOL.Real" "Level0_Rewrites"
 parse_rare_file "Tests/level2a_rewrites" "HOL.Real" "Level2a_Rewrites"
