@@ -27,7 +27,7 @@ merely a convenience solution since loading the Word library can take a while.
 \<close>
 
 theory IsaRARE
-  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" (*HOL.SMT_CVC_Word *) HOL.SMT_CVC_Extension
+  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" (*HOL.SMT_CVC_Word *) HOL.SMT_CVC_Extension Word_Lib.Reversed_Bit_Lists
   keywords "parse_rare_file" "parse_rare" "print_IsaRARE_options" :: diag
 begin
 
@@ -182,6 +182,7 @@ ML \<open>
     val processed_smtlibTerm = parsed_lines |> map (Process_RARE.process_rule ctxt)
     val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done processing rewrites"))
     val result = processed_smtlibTerm |> map (Write_Theory.write_lemma ctxt 1) |> String.concat
+    val _ = writeln (Active.sendback_markup_command result)
     val _ = Print_Mode.with_modes [] (fn () => writeln result)
     val _ = IsaRARE_Config.verbose_msg ctxt (K ("... done writing rewrites!"))
 
@@ -274,6 +275,8 @@ parse_rare_file "Tests/level2a_rewrites" "HOL.Real" "Level2a_Rewrites"
 parse_rare_file "Tests/level2b_rewrites" "HOL.Real" "Level2b_Rewrites"
 parse_rare_file "Tests/level2_rewrites" "HOL.Real" "Level2_Rewrites"
 parse_rare_file "Tests/level3a_rewrites" "HOL.Real" "Level3a_Rewrites"
+parse_rare_file "Tests/level3b_rewrites" "HOL.Real" "Level3b_Rewrites"
+parse_rare_file "Tests/level3c_rewrites" "HOL.Real" "Level3c_Rewrites"
 
 
 
