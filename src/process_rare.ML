@@ -148,7 +148,7 @@ fun process_rule ctxt (rule as ({rule_name, params, let_defs, ...} : rewrite_rul
      (*Add implicit assumptions*)
      val (implAss,body') = RARE_Impl_Assms.process ctxt body params
      val body_with_implAss = SMTLIB.S [SMTLIB.Sym "implies", SMTLIB.S ([SMTLIB.Sym "and"]@implAss), body']
-     val _ = IsaRARE_Config.debug_msg ctxt (fn _ => "Added impl ass " ^ SMTLIB.str_of body_with_implAss) []
+     val _ = IsaRARE_Config.debug_msg ctxt (fn _ => "Added impl ass " ^ (if (Config.get ctxt IsaRARE_Config.implAssump) then SMTLIB.str_of body_with_implAss else "None")) []
      val body_with_implAss = body
 
      (*Add lets*)

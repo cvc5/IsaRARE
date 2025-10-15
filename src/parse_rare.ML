@@ -461,7 +461,8 @@ let
 
       separate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "args")::args::(SMTLIB.Key "conclusion")::[c])
       =
-      (DEFINE_COND_RULE,SOME p,c) |
+      (DEFINE_COND_RULE,SOME (@{print}("Eunoia premises parsed:", p); p |> 
+        (fn SMTLIB.S xs => (if length xs = 1 then hd xs else SMTLIB.S ([SMTLIB.Sym "and"] @ xs)))) , c) |
 
       separate_expr_rule xs 
       =
