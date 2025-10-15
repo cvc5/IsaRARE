@@ -1,0 +1,330 @@
+{
+    "version": "0.1",
+    "smt-lib-version": "2.6",
+    "specs": {
+        "Core": {
+            "true": {
+                "mapsto": "True",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "false": {
+                "mapsto": "False",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "not": {
+                "mapsto": "\\<not>",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "=>": {
+                "mapsto": "-->",
+                "assoc": "right",
+                "chainable": false,
+                "pairwise": false
+            },
+            "and": {
+                "mapsto": "\\<and>",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "or": {
+                "mapsto": "\\<or>",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "xor": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "=": {
+                "mapsto": "=",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            },
+            "distinct": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": true
+            },
+            "ite": {
+                "mapsto": "ite",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            }
+        },
+        "Strings": {
+            "_ char": {
+                "mapsto": "chr",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.++": {
+                "mapsto": "str_concat",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.len": {
+                "mapsto": "str_len",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.<": {
+                "mapsto": "<",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            },
+            "str.to_re": {
+                "mapsto": "str_to_re",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.in_re": {
+                "mapsto": "str_in_re",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.none": {
+                "mapsto": "re_none",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.all": {
+                "mapsto": "re_all",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.allchar": {
+                "mapsto": "re_allchar",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.++": {
+                "mapsto": "re_concat",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.union": {
+                "mapsto": "re_union",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.inter": {
+                "mapsto": "re_inter",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.*": {
+                "mapsto": "re_star",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.<=": {
+                "mapsto": "<=",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.at": {
+                "mapsto": "str_at",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            },
+            "str.substr": {
+                "mapsto": "str_substr",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.prefixof": {
+                "mapsto": "str_prefixof",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.suffixof": {
+                "mapsto": "str_suffixof",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.contains": {
+                "mapsto": "str_contains",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.indexof": {
+                "mapsto": "str_indexof",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.replace": {
+                "mapsto": "str_replace",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.replace_all": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.replace_re": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.replace_re_all": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.comp": {
+                "mapsto": "re_comp",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.diff": {
+                "mapsto": "re_diff",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.+": {
+                "mapsto": "re_plus",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.opt": {
+                "mapsto": "re_opt",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "re.range": {
+                "mapsto": "re_range",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "_ re.^": {
+                "mapsto": "re_pow",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "_ re.loop": {
+                "mapsto": "re_loop",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.to_int": {
+                "mapsto": "to_int",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "str.from_int": {
+                "mapsto": "from_int",
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            }
+        },
+        "Ints": {
+            "-": {
+                "mapsto": "-",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "+": {
+                "mapsto": "+",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "*": {
+                "mapsto": "*",
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "div": {
+                "mapsto": null,
+                "assoc": "left",
+                "chainable": false,
+                "pairwise": false
+            },
+            "mod": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "abs": {
+                "mapsto": null,
+                "assoc": null,
+                "chainable": false,
+                "pairwise": false
+            },
+            "<=": {
+                "mapsto": "<=",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            },
+            "<": {
+                "mapsto": "<",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            },
+            ">=": {
+                "mapsto": ">=",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            },
+            ">": {
+                "mapsto": ">",
+                "assoc": null,
+                "chainable": true,
+                "pairwise": false
+            }
+        }
+    }
+}
