@@ -27,7 +27,7 @@ merely a convenience solution since loading the Word library can take a while.
 \<close>
 
 theory IsaRARE
-  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" "isabelle_smt/Strings" HOL.SMT_CVC_Extension
+  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" "string_library/Strings" HOL.SMT_CVC_Extension
   keywords "parse_rare_file" "parse_rare" "print_IsaRARE_options" :: diag
 begin
 
