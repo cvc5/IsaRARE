@@ -957,7 +957,7 @@
 )
 (declare-rule str-replace-find-pre ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (t1 (Seq @T0)) (r1 (Seq @T1)) (ts1 (Seq @T2) :list) (ss1 (Seq @T3) :list))
   :args (t1 r1 ts1 ss1)
-  :conclusion (= (seq.replace (seq.++ ts1 t1 ss1) t1 r1) (seq.++ (seq.replace ($singleton_elim (seq.++ ts1 t1) t1 r1) ss1)))
+  :conclusion (= (seq.replace (seq.++ ts1 t1 ss1) t1 r1) (seq.++ (seq.replace (seq.++ ts1 t1) t1 r1) ss1))
 )
 (declare-rule str-replace-all-no-contains ((@T0 Type) (@T1 Type) (@T2 Type) (t1 (Seq @T0)) (s1 (Seq @T1)) (r1 (Seq @T2)))
   :premises ((= (seq.contains t1 s1) false))
