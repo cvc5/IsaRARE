@@ -538,7 +538,7 @@
 (declare-rule bv-concat-extract-merge ((@n0 Int) (@n1 Int) (@n2 Int) (xs1 (BitVec @n0) :list) (s1 (BitVec @n1)) (ys1 (BitVec @n2) :list) (i1 Int) (j1 Int) (j2 Int) (k1 Int))
   :premises ((= j2 (+ j1 1)))
   :args (xs1 s1 ys1 i1 j1 j2 k1)
-  :conclusion (= (concat xs1 (extract k1 j2 s1) (extract j1 i1 s1) ys1) ($singleton_elim (concat xs1 (extract k1 i1 s1) ys1)))
+  :conclusion (= (concat xs1 (extract k1 j2 s1) (extract j1 i1 s1) ys1) (concat xs1 (extract k1 i1 s1) ys1))
 )
 
 (declare-rule bv-extract-concat-2 ((@n0 Int) (@n1 Int) (@n2 Int) (x1 (BitVec @n0)) (xs1 (BitVec @n1) :list) (y1 (BitVec @n2)) (i1 Int) (j1 Int) (u1 Int) (u2 Int))
