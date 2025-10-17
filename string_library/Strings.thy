@@ -3,7 +3,7 @@ theory Strings
 begin
 
 no_notation List.length ("\<bar>_\<bar>")
-no_notation Groups.abs_class.abs  ("\<bar>_\<bar>")
+unbundle no abs_syntax
 
 
 
@@ -293,7 +293,7 @@ abbreviation smallest_int where
   "smallest_int n P \<equiv> P n \<and> (\<forall>n'. P n' \<longrightarrow> n \<le> n')"
 
 abbreviation shortest_word where
-  "shortest_word w P \<equiv> P w \<and> (\<forall>w'. P w' \<longrightarrow> \<bar>w\<bar> \<le> length(w'))"
+  "shortest_word w P \<equiv> P w \<and> (\<forall>w'. P w' \<longrightarrow> \<bar>w\<bar> \<le> \<bar>w'\<bar>)"
 
 theorem "UNIV = UC"  
   by (simp add: UC_def)
@@ -324,7 +324,7 @@ lemma length_int_nat_min: "m \<ge> 0 \<Longrightarrow> n \<ge> 0 \<Longrightarro
   by auto
 
 lemma length_int_nat_sub_min:
-  assumes "length (w) \<ge> m"
+  assumes "\<bar>w\<bar> \<ge> m"
     and "n \<ge> 0"
     and "m \<ge> 0"
   shows "int (min (nat n) ((length w)-nat m)) = (min n (\<bar>w\<bar>- m))"
@@ -341,12 +341,10 @@ theorem str_at:"str_at w n = str_substr w n 1"
 
 lemma substr_factor_equal:
   assumes "0 \<le> m"
-    and "m < length(w)"
+    and "m < \<bar>w\<bar>"
     and "0 < n"
   shows "str_substr w m n = (w[nat m; nat m + nat n])"
-  using assms diff_nat_eq_if
-  by (metis add_le_imp_le_diff less_iff_succ_less_eq nat_add_distrib nat_int of_nat_0_le_iff order_le_less)
-
+  using assms diff_nat_eq_if by auto
 (*
 theorem str_substr1_old:
   assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
@@ -374,7 +372,7 @@ qed
 *)
 
 theorem str_substr11_aux:
-  assumes "0 \<le> m" and "m < length (w)" and "0 < n"
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
   assumes "v = str_substr w m n"
   shows "(\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
 proof -
@@ -385,30 +383,29 @@ proof -
   then have "(\<exists>x y. w = x\<cdot>v\<cdot>y \<and> (length x) = nat m \<and>
                (length v) = min ((nat m + nat n)-nat m) ((length w)-nat m))" 
     using factorization v_factor by metis
-  then have "(\<exists>x y. w = x\<cdot>v\<cdot>y \<and> length x = m \<and> (length v) = min (nat n) ((length w)-nat m))" 
-    by auto
+  then have "(\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> (length v) = min (nat n) ((length w)-nat m))" 
+    by (metis add_diff_cancel_left' assms(1) int_nat_eq)
   then have "(\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = int (min (nat n) ((length w)-nat m)))"
     by simp
   then have "\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = (min n (\<bar>w\<bar>- m))" 
-    using length_int_nat_sub_min assms
-    by (metis order_le_less)
+    using length_int_nat_sub_min assms by auto
   then show ?thesis
     using assms(4) by force
 qed
 
 theorem str_substr_exists:
-  assumes "0 \<le> m" and "m < length w" and "0 < n"
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
   shows "\<exists>v. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
   using str_substr11_aux assms
   by fastforce
 
 theorem str_substr1_aux:
-  assumes "0 \<le> m" and "m < length w" and "0 < n"
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
   shows "(\<exists>x y. w = x\<cdot>(str_substr w m n)\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>str_substr w m n\<bar> = min n (\<bar>w\<bar> - m))"
   using str_substr11_aux assms by auto
 
 theorem str_substr1_1:
-  assumes "0 \<le> m" and "m < length w" and "0 < n"
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
   shows "\<exists>!v. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
 proof (rule ex_ex1I)
   show "\<exists>v x y. w = str_concat x (str_concat v y) \<and> int (length x) = m \<and>
@@ -427,13 +424,13 @@ next
 qed
 
 theorem str_substr1_2:
-  assumes "0 \<le> m" and "m < length(w)" and "0 < n"
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
   shows "str_substr w m n = (THE v. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m)))"
   using theI_unique[OF str_substr1_1[OF assms], of "str_substr w m n"]
     str_substr1_aux[OF assms] by auto
 
 theorem str_substr2:
-  assumes "\<not>(0 \<le> m \<and> (m <  length(w)) \<and> 0 < n)"
+  assumes "\<not>(0 \<le> m \<and> (m <  \<bar>w\<bar>) \<and> 0 < n)"
   shows "str_substr w m n = \<epsilon>"
 proof -
   from assms have "0 > m \<or> m \<ge> \<bar>w\<bar> \<or> 0 \<ge> n" by auto
@@ -472,7 +469,7 @@ If either of these premises is not met, or i<0, the the function must evaluate t
 "
 
 theorem str_indexof1:
-  assumes "i\<ge>0" and "i\<le> length w" and "str_contains (str_substr w i \<bar>w\<bar>) v"
+  assumes "i\<ge>0" and "i\<le> \<bar>w\<bar>" and "str_contains (str_substr w i \<bar>w\<bar>) v"
   shows "\<exists>n. str_indexof w v i = n \<and> smallest_int n (\<lambda>n. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> i \<le> n \<and> n = \<bar>x\<bar>))" 
 proof -
   have "nat i \<le> length w"
@@ -486,7 +483,7 @@ proof -
   have "smallest_int (indexof_nat w v (Int.nat i)) (\<lambda>n. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> (Int.nat i) \<le> n \<and> n = length x))"
     using str_indexof_nat1[of "Int.nat i" w v] by auto
   then show ?thesis
-    by (metis assms(2,3) nat_le_iff of_nat_0_le_iff of_nat_le_iff)
+   by (metis assms nat_int nat_le_iff)
 qed
 
 theorem str_indexof2: 

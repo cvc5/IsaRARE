@@ -9,7 +9,7 @@ notation append (infixr "\<cdot>" 65)
 notation Nil ("\<epsilon>")
 
 notation length ("\<bar>_\<bar>")
-no_notation Groups.abs_class.abs ("\<bar>_\<bar>")
+unbundle no abs_syntax
 
 instantiation char::linorder begin
 
