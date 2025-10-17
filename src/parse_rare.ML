@@ -418,12 +418,28 @@ fun temp_restore_approx_types ys [] = [] |
 
  temp_restore_approx_types ys (x::xs) = x:: temp_restore_approx_types ys xs
 
+fun convert_bit_vectors_to_approx [] = [] |
+
+ convert_bit_vectors_to_approx
+                           ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
+                                            SMTLIB.S [SMTLIB.Sym "BitVec",
+                                                      SMTLIB.Sym width]
+                                            ]))::xs)
+ =
+ ((Par (SMTLIB.S [SMTLIB.Sym t_name,
+                  SMTLIB.Sym "?BitVec"]))::convert_bit_vectors_to_approx xs) |
+
+ convert_bit_vectors_to_approx (x::xs) = x::convert_bit_vectors_to_approx xs
+
 
 fun eunoia_param_parser l =
   expect_char l "Could not find first opening parentheses in parameter list" "(" 
   --| (Scan.many is_space)
   |-- (((Scan.repeat ((par_parser l) --| (Scan.many1 is_space)) )
-      @@@ (Scan.option (par_parser l) >> (fn NONE => [] | SOME xs => [xs]))) >>  temp_restore_approx_types [])
+      @@@ (Scan.option (par_parser l) 
+       >> (fn NONE => [] | SOME xs => [xs]))) 
+       >>  temp_restore_approx_types []
+       >> convert_bit_vectors_to_approx)
 
  --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
 
