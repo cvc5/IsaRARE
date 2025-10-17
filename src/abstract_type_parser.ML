@@ -11,8 +11,14 @@ fun rare_type_parser (SMTLIB.Sym "?Array", [])
   | rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
   | rare_type_parser _ = NONE
 
+fun rare_term_parser (SMTLIB.Sym "div_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.divide::int => int => int\<close> $ t1 $ t2)
+  | rare_term_parser (SMTLIB.Sym "mod_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.modulo::int => int => int\<close> $ t1 $ t2)
+  | rare_term_parser (SMTLIB.Sym "divisible", [t1, t2]) = SOME ( \<^term>\<open>Rings.dvd::int => int => bool\<close> $ t1 $ t2)
+  | rare_term_parser _ = NONE
+
 val _ = Theory.setup (Context.theory_map (
-  SMTLIB_Proof.add_type_parser rare_type_parser))
+  SMTLIB_Proof.add_type_parser rare_type_parser #>
+  SMTLIB_Proof.add_term_parser rare_term_parser))
 
 (*
 fun mk_test (t1, t2) = (Const (\<^const_name>\<open>Word.word_cat\<close>, dummyT --> dummyT --> dummyT))  $ t1 $ t2

@@ -48,7 +48,7 @@ We could find closest anchestor but who guarantees us that we can prove the lemm
 fun write_file_header ctxt theory_name theory_imports 
  = Library.cat_lines
   ["theory " ^ theory_name,
-   "  imports \"HOL-CVC.Dsl_Nary_Ops\" " ^ theory_imports,
+   "  imports \"HOL.Dsl_Nary_Ops\" " ^ theory_imports,
    "begin\n",
    "(* Thank you for using IsaRARE. This is a theory automatically created from a RARE file!",
    "All that remains to do is to prove any lemma whose provided proof fails.",
