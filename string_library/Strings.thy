@@ -118,8 +118,15 @@ abbreviation str_indexof:: "uc_word \<Rightarrow> uc_word \<Rightarrow> int \<Ri
 abbreviation str_replace:: "uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
   "str_replace \<equiv> replace"
 
-abbreviation str_replace_all:: "uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
-  "str_replace_all \<equiv> undefined"
+(* str_replace_all added by Jibiana Jakpor. TODO: Prove that it matches SMT-LIB spec. *)
+fun str_replace_all ::  "uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word" where
+"str_replace_all s \<epsilon> t' = s" |
+"str_replace_all \<epsilon> t t' = \<epsilon>" |
+"str_replace_all s t t' = (if (str_contains s t = False) then s else
+  (let u1 = (take (nat (str_indexof s t 0)) s); 
+       u2 = drop (length u1 + length t) s in
+       u1\<cdot>t'\<cdot> (str_replace_all u2 t t')))"
+
 
 abbreviation str_replace_re:: "uc_word \<Rightarrow> uc_regex \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
   "str_replace_re \<equiv> undefined"
