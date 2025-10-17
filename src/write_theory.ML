@@ -186,8 +186,13 @@ fun write_lemma ctxt i (lemma as {rule_name,rule_body} : rewrite_rule_lemma) =
 
 
 
-fun write_thy ctxt theory_name theory_imports cs = (@{print}("cs",cs);
- write_file_header ctxt theory_name theory_imports ^ String.concat (map (write_lemma ctxt 0) cs) ^ write_file_footer)
+fun write_thy ctxt theory_name theory_imports cs =
+let
+  val ctxt = (Config.put show_types false ctxt)
+  val ctxt = (Config.put show_sorts false ctxt)
+in 
+ write_file_header ctxt theory_name theory_imports ^ String.concat (map (write_lemma ctxt 0) cs) ^ write_file_footer
+end
            
 
 end;
