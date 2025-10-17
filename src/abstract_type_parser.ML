@@ -14,6 +14,7 @@ fun rare_type_parser (SMTLIB.Sym "?Array", [])
 fun rare_term_parser (SMTLIB.Sym "div_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.divide::int => int => int\<close> $ t1 $ t2)
   | rare_term_parser (SMTLIB.Sym "mod_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.modulo::int => int => int\<close> $ t1 $ t2)
   | rare_term_parser (SMTLIB.Sym "divisible", [t1, t2]) = SOME ( \<^term>\<open>Rings.dvd::int => int => bool\<close> $ t1 $ t2)
+  | rare_term_parser (SMTLIB.Sym "abs", [t]) = SOME ( \<^term>\<open>Groups.abs::int => int\<close> $ t)
   | rare_term_parser _ = NONE
 
 val _ = Theory.setup (Context.theory_map (
