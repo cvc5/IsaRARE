@@ -128,14 +128,32 @@ fun str_replace_all ::  "uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word \<R
        u1\<cdot>t'\<cdot> (str_replace_all u2 t t')))"
 
 
-abbreviation str_replace_re:: "uc_word \<Rightarrow> uc_regex \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
-  "str_replace_re \<equiv> undefined"
+abbreviation str_in_re:: "uc_word \<Rightarrow> uc_regex \<Rightarrow> bool" where 
+  "str_in_re w r \<equiv> nullable (rderivw w r)"
+
+(* Not an SMT-LIB symbol interpretation but a predicate pulled from the Model Proofs section to be
+   used in str_replace_re.
+ *)
+abbreviation shortest_word where
+  "shortest_word w P \<equiv> P w \<and> (\<forall>w'. P w' \<longrightarrow> \<bar>w\<bar> \<le> \<bar>w'\<bar>)"
+
+(* str_replace_re added by Jibiana Jakpor. This definition mirrors the SMT-LIB specification. *)
+function  str_replace_re :: "uc_word \<Rightarrow> uc_regex \<Rightarrow> uc_word \<Rightarrow> uc_word" where
+  "(\<not> (\<exists>s. str_contains w s \<and> str_in_re s L)) \<Longrightarrow> str_replace_re w L w2 = w" |
+"\<exists>s.  str_contains w s \<and> str_in_re s L \<Longrightarrow> str_replace_re w L w2 = 
+  (let u1 = (THE u1'. (shortest_word u1' (\<lambda>u. \<exists>w1 u2. (str_in_re w1 L \<and> u \<cdot> w1 \<cdot> u2 = w))));
+   w1 = (THE w1'. shortest_word w1' (\<lambda>w1''. \<exists>u2'. u1 \<cdot> w1'' \<cdot> u2' = w \<and> str_in_re w1'' L));  
+  u2 = THE u2'. u1 \<cdot> w1 \<cdot> u2' = w   in 
+    (u1 \<cdot> w2 \<cdot> u2) )"
+  apply auto
+  apply atomize_elim
+  apply auto
+  done
+
+termination by lexicographic_order
 
 abbreviation str_replace_re_all:: "uc_word \<Rightarrow> uc_regex \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
   "str_replace_re_all \<equiv> undefined"
-
-abbreviation str_in_re:: "uc_word \<Rightarrow> uc_regex \<Rightarrow> bool" where 
-  "str_in_re w r \<equiv> nullable (rderivw w r)"
 
 abbreviation str_to_re:: "uc_word \<Rightarrow> uc_regex" where 
   "str_to_re w \<equiv> regex.Const w"
@@ -299,8 +317,10 @@ abbreviation smallest_set where
 abbreviation smallest_int where
   "smallest_int n P \<equiv> P n \<and> (\<forall>n'. P n' \<longrightarrow> n \<le> n')"
 
-abbreviation shortest_word where
-  "shortest_word w P \<equiv> P w \<and> (\<forall>w'. P w' \<longrightarrow> \<bar>w\<bar> \<le> \<bar>w'\<bar>)"
+(* abbreviation shortest_word where
+  "shortest_word w P \<equiv> P w \<and> (\<forall>w'. P w' \<longrightarrow> \<bar>w\<bar> \<le> \<bar>w'\<bar>)" 
+  defined above
+*)
 
 theorem "UNIV = UC"  
   by (simp add: UC_def)
