@@ -27,7 +27,7 @@ merely a convenience solution since loading the Word library can take a while.
 \<close>
 
 theory IsaRARE
-  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" (*HOL.SMT_CVC_Word *) HOL.SMT_CVC_Extension
+  imports HOL.SMT_CVC "HOL.Real" "HOL-Library.Smtlib_String" "string_library/Strings" HOL.SMT_CVC_Extension
   keywords "parse_rare_file" "parse_rare" "print_IsaRARE_options" :: diag
 begin
 
@@ -57,6 +57,7 @@ More information can be found in Section \ref{sec:functionality}.
 \<close>
 
 
+value "3 div (0::int)"
 
 section \<open>The RARE language\label{sec:rare}\<close>
 
@@ -81,6 +82,7 @@ in Section \ref{sec:options}.
 
         
 ML_file \<open>src/abstract_type_parser.ML\<close>
+ML_file \<open>src/string_parser.ML\<close>
 
 text \<open>
 This file contains parser functionality for the extensions to SMT-LIB RARE offers. Mostly,
