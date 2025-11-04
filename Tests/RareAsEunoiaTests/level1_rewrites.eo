@@ -1,3 +1,7 @@
+;;;;;;;;;;;;;;;;;
+;; Arith
+;;;;;;;;;;;;;;;;;
+
 (declare-rule arith-div-total-zero-real ((@T0 Type) (t1 @T0))
   :args (t1)
   :conclusion (= (/_total t1 0/1) 0/1)
@@ -6,7 +10,6 @@
   :args (t1)
   :conclusion (= (/_total t1 0) 0/1)
 )
-
 (declare-rule arith-elim-gt ((@T0 Type) (@T1 Type) (t1 @T0) (s1 @T1))
   :args (t1 s1)
   :conclusion (= (> t1 s1) (not (>= s1 t1)))
@@ -62,6 +65,11 @@
   :args (t1 s1)
   :conclusion (= (>= (ite (>= t1 s1) t1 s1) s1) true)
 )
+
+;;;;;;;;;;;;;;;;;
+;; Ite
+;;;;;;;;;;;;;;;;;
+
 (declare-rule ite-true-cond ((@T0 Type) (@T1 Type) (x1 @T0) (y1 @T1))
   :args (x1 y1)
   :conclusion (= (ite true x1 y1) x1)
@@ -94,26 +102,11 @@
   :args (c1 x1 y1 z1)
   :conclusion (= (ite c1 x1 (ite (not c1) y1 z1)) (ite c1 x1 y1))
 )
-(declare-rule sets-member-singleton ((@T0 Type) (@T1 Type) (x1 @T0) (y1 @T1))
-  :args (x1 y1)
-  :conclusion (= (set.member x1 (set.singleton y1)) (= x1 y1))
-)
-(declare-rule sets-choose-singleton ((@T0 Type) (x1 @T0))
-  :args (x1)
-  :conclusion (= (set.choose (set.singleton x1)) x1)
-)
-(declare-rule seq-len-unit ((@T0 Type) (x1 @T0))
-  :args (x1)
-  :conclusion (= (seq.len (seq.unit x1)) 1)
-)
-(declare-rule seq-nth-unit ((@T0 Type) (x1 @T0))
-  :args (x1)
-  :conclusion (= (seq.nth (seq.unit x1) 0) x1)
-)
-(declare-rule seq-rev-unit ((@T0 Type) (x1 @T0))
-  :args (x1)
-  :conclusion (= (seq.rev (seq.unit x1)) (seq.unit x1))
-)
+
+;;;;;;;;;;;;;;;;;
+;; Equality
+;;;;;;;;;;;;;;;;;
+
 (declare-rule eq-refl ((@T0 Type) (t1 @T0))
   :args (t1)
   :conclusion (= (= t1 t1) true)
@@ -131,6 +124,11 @@
   :args (C1 t1 s1 r1)
   :conclusion (= (= (ite C1 t1 s1) r1) (ite C1 (= t1 r1) (= s1 r1)))
 )
+
+;;;;;;;;;;;;;;;;;
+;; Distinct
+;;;;;;;;;;;;;;;;;
+
 (declare-rule distinct-binary-elim ((@T0 Type) (@T1 Type) (t1 @T0) (s1 @T1))
   :args (t1 s1)
   :conclusion (= (distinct t1 s1) (not (= t1 s1)))

@@ -1,3 +1,7 @@
+;;;;;;;;;;;;;;;;;
+;; Bitvectors
+;;;;;;;;;;;;;;;;;
+
 (declare-rule bv-extract-extract ((@n0 Int) (x1 (BitVec @n0)) (i1 Int) (j1 Int) (k1 Int) (l1 Int) (ll1 Int) (kk1 Int))
   :premises ((= ll1 (+ i1 l1)) (= kk1 (+ i1 k1)))
   :args (x1 i1 j1 k1 l1 ll1 kk1)
@@ -411,33 +415,6 @@
   :args (t1 s1)
   :conclusion (= (bvule t1 s1) (<= (ubv_to_int t1) (ubv_to_int s1)))
 )
-(declare-rule array-read-over-write ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (t1 (Array @T0 @T1)) (i1 @T2) (e1 @T3))
-  :args (t1 i1 e1)
-  :conclusion (= (select (store t1 i1 e1) i1) e1)
-)
-(declare-rule array-read-over-write2 ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (t1 (Array @T0 @T1)) (i1 @T2) (j1 @T3) (e1 @T4))
-  :premises ((= (= i1 j1) false))
-  :args (t1 i1 j1 e1)
-  :conclusion (= (select (store t1 i1 e1) j1) (select t1 j1))
-)
-(declare-rule array-store-overwrite ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (t1 (Array @T0 @T1)) (i1 @T2) (e1 @T3) (f1 @T4))
-  :args (t1 i1 e1 f1)
-  :conclusion (= (store (store t1 i1 e1) i1 f1) (store t1 i1 f1))
-)
-(declare-rule array-store-self ((@T0 Type) (@T1 Type) (@T2 Type) (t1 (Array @T0 @T1)) (i1 @T2))
-  :args (t1 i1)
-  :conclusion (= (store t1 i1 (select t1 i1)) t1)
-)
-(declare-rule array-read-over-write-split ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (t1 (Array @T0 @T1)) (i1 @T2) (e1 @T3) (j1 @T4))
-  :args (t1 i1 e1 j1)
-  :conclusion (= (select (store t1 j1 e1) i1) (ite (= i1 j1) e1 (select t1 i1)))
-)
-(declare-rule array-store-swap ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (@T5 Type) (t1 (Array @T0 @T1)) (i1 @T2) (j1 @T3) (e1 @T4) (f1 @T5))
-  :premises ((= (= i1 j1) false))
-  :args (t1 i1 j1 e1 f1)
-  :conclusion (= (store (store t1 i1 e1) j1 f1) (store (store t1 j1 f1) i1 e1))
-)
-
 (declare-rule bv-concat-extract-merge ((@n0 Int) (@n1 Int) (@n2 Int) (xs1 (BitVec @n0) :list) (s1 (BitVec @n1)) (ys1 (BitVec @n2) :list) (i1 Int) (j1 Int) (j2 Int) (k1 Int))
   :premises ((= j2 (+ j1 1)))
   :args (xs1 s1 ys1 i1 j1 j2 k1)
@@ -519,6 +496,47 @@
   :args (xs1 ys1 z1 size1 n1 exponent1 u1)
   :conclusion (= (bvmul xs1 z1 (@bv n1 size1) ys1) (concat (extract u1 0 (bvneg (bvmul xs1 z1 ys1))) (@bv 0 exponent1)))
 )
+(declare-rule uf-int2bv-bv2nat ((w1 Int) (t1 Int))
+  :args (w1 t1)
+  :conclusion (= (ubv_to_int (int_to_bv w1 t1)) (mod_total t1 (int.pow2 w1)))
+)
+
+;;;;;;;;;;;;;;;;;
+;; Arrays
+;;;;;;;;;;;;;;;;;
+
+(declare-rule array-read-over-write ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (t1 (Array @T0 @T1)) (i1 @T2) (e1 @T3))
+  :args (t1 i1 e1)
+  :conclusion (= (select (store t1 i1 e1) i1) e1)
+)
+(declare-rule array-read-over-write2 ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (t1 (Array @T0 @T1)) (i1 @T2) (j1 @T3) (e1 @T4))
+  :premises ((= (= i1 j1) false))
+  :args (t1 i1 j1 e1)
+  :conclusion (= (select (store t1 i1 e1) j1) (select t1 j1))
+)
+(declare-rule array-store-overwrite ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (t1 (Array @T0 @T1)) (i1 @T2) (e1 @T3) (f1 @T4))
+  :args (t1 i1 e1 f1)
+  :conclusion (= (store (store t1 i1 e1) i1 f1) (store t1 i1 f1))
+)
+(declare-rule array-store-self ((@T0 Type) (@T1 Type) (@T2 Type) (t1 (Array @T0 @T1)) (i1 @T2))
+  :args (t1 i1)
+  :conclusion (= (store t1 i1 (select t1 i1)) t1)
+)
+(declare-rule array-read-over-write-split ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (t1 (Array @T0 @T1)) (i1 @T2) (e1 @T3) (j1 @T4))
+  :args (t1 i1 e1 j1)
+  :conclusion (= (select (store t1 j1 e1) i1) (ite (= i1 j1) e1 (select t1 i1)))
+)
+(declare-rule array-store-swap ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (@T4 Type) (@T5 Type) (t1 (Array @T0 @T1)) (i1 @T2) (j1 @T3) (e1 @T4) (f1 @T5))
+  :premises ((= (= i1 j1) false))
+  :args (t1 i1 j1 e1 f1)
+  :conclusion (= (store (store t1 i1 e1) j1 f1) (store (store t1 j1 f1) i1 e1))
+)
+
+;;;;;;;;;;;;;;;;;
+;; Sets
+;;;;;;;;;;;;;;;;;
+
+
 (declare-rule sets-eq-singleton-emp ((@T0 Type) (@T1 Type) (x1 (Set @T0)) (y1 @T1))
   :premises ((= x1 (as set.empty (Set @T0))))
   :args (x1 y1 (Set @T0))
@@ -596,6 +614,31 @@
 (declare-rule sets-is-singleton-elim ((@T0 Type) (x1 (Set @T0)))
   :args (x1)
   :conclusion (= (set.is_singleton x1) (= x1 (set.singleton (set.choose x1))))
+)
+(declare-rule sets-member-singleton ((@T0 Type) (@T1 Type) (x1 @T0) (y1 @T1))
+  :args (x1 y1)
+  :conclusion (= (set.member x1 (set.singleton y1)) (= x1 y1))
+)
+(declare-rule sets-choose-singleton ((@T0 Type) (x1 @T0))
+  :args (x1)
+  :conclusion (= (set.choose (set.singleton x1)) x1)
+)
+
+;;;;;;;;;;;;;;;;;
+;; Sequences
+;;;;;;;;;;;;;;;;;
+
+(declare-rule seq-len-unit ((@T0 Type) (x1 @T0))
+  :args (x1)
+  :conclusion (= (seq.len (seq.unit x1)) 1)
+)
+(declare-rule seq-nth-unit ((@T0 Type) (x1 @T0))
+  :args (x1)
+  :conclusion (= (seq.nth (seq.unit x1) 0) x1)
+)
+(declare-rule seq-rev-unit ((@T0 Type) (x1 @T0))
+  :args (x1)
+  :conclusion (= (seq.rev (seq.unit x1)) (seq.unit x1))
 )
 (declare-rule str-eq-ctn-false ((@T0 Type) (@T1 Type) (@T2 Type) (@T3 Type) (x1 (Seq @T0) :list) (x2 (Seq @T1)) (x3 (Seq @T2) :list) (y1 (Seq @T3)))
   :premises ((= (seq.contains y1 x2) false))

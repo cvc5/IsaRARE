@@ -1,8 +1,17 @@
+;;;;;;;;;;;;;;;;;
+;; Arith
+;;;;;;;;;;;;;;;;;
+
 (declare-rule arith-mod-over-mod ((c1 Int) (ts1 Int :list) (r1 Int) (ss1 Int :list))
   :premises ((= (= c1 0) false))
   :args (c1 ts1 r1 ss1)
   :conclusion (= (mod_total (+ ts1 (mod_total r1 c1) ss1) c1) (mod_total (+ ts1 r1 ss1) c1))
 )
+
+;;;;;;;;;;;;;;;;;
+;; Boolean
+;;;;;;;;;;;;;;;;;
+
 (declare-rule bool-and-conf ((xs1 Bool :list) (w1 Bool) (ys1 Bool :list) (zs1 Bool :list))
   :args (xs1 w1 ys1 zs1)
   :conclusion (= (and xs1 w1 ys1 (not w1) zs1) false)
@@ -36,6 +45,11 @@
   :args (y1 y2 ys1 z1)
   :conclusion (= (=> (or y1 y2 ys1) z1) (and (=> y1 z1) (=> (or y2 ys1) z1)))
 )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Strings and regular expressions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (declare-rule str-to-lower-concat ((s1 String) (s2 String) (s3 String :list))
   :args (s1 s2 s3)
   :conclusion (= (str.to_lower (str.++ s1 s2 s3)) (str.++ (str.to_lower s1) (str.to_lower (str.++ s2 s3))))
@@ -50,7 +64,6 @@
   :args (s1 s2 s3)
   :conclusion (= (str.to_int (str.++ s1 s2 s3)) -1)
 )
-
 (declare-rule str-leq-concat-false ((s1 String :list) (t1 String) (s2 String) (t2 String :list) (s3 String :list))
   :premises ((= (str.len t1) (str.len s2)) (= (str.<= t1 s2) false))
   :args (s1 t1 s2 t2 s3)

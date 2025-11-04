@@ -1,3 +1,7 @@
+;;;;;;;;;;;;;;;;;
+;; Arith
+;;;;;;;;;;;;;;;;;
+
 (declare-rule arith-int-div-total ((t1 Int) (s1 Int))
   :premises ((= (= s1 0) false))
   :args (t1 s1)
@@ -66,10 +70,6 @@
   :args (t1 s1)
   :conclusion (= (= t1 s1) (and (>= t1 s1) (<= t1 s1)))
 )
-(declare-rule arith-to-int-elim ((x1 Int))
-  :args (x1)
-  :conclusion (= (to_int x1) x1)
-)
 (declare-rule arith-int-eq-conflict ((t1 Int) (c1 Real))
   :premises ((= (= (to_real (to_int c1)) c1) false))
   :args (t1 c1)
@@ -85,6 +85,11 @@
   :args (n1 t1)
   :conclusion (= (divisible n1 t1) (= (mod_total t1 n1) 0))
 )
+
+;;;;;;;;;;;;;;;;;
+;; Boolean
+;;;;;;;;;;;;;;;;;
+
 (declare-rule bool-double-not-elim ((t1 Bool))
   :args (t1)
   :conclusion (= (not (not t1)) t1)
@@ -175,6 +180,11 @@
   :args (x1 y1)
   :conclusion (= (not (= x1 y1)) (= x1 (not y1)))
 )
+
+;;;;;;;;;;;;;;;;;
+;; Ite
+;;;;;;;;;;;;;;;;;
+
 (declare-rule ite-neg-branch ((c1 Bool) (x1 Bool) (y1 Bool))
   :premises ((= (not y1) x1))
   :args (c1 x1 y1)
@@ -220,6 +230,11 @@
   :args (c1 x1 y1)
   :conclusion (= (not (ite c1 x1 y1)) (ite c1 (not x1) (not y1)))
 )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Strings and regular expressions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (declare-rule str-eq-len-false ((x1 String) (y1 String))
   :premises ((= (= (str.len x1) (str.len y1)) false))
@@ -343,10 +358,3 @@
   :args (n1)
   :conclusion (= (str.in_re (str.from_int n1) (re.* (re.range "0" "9"))) true)
 )
-
-(declare-rule uf-int2bv-bv2nat ((w1 Int) (t1 Int))
-  :args (w1 t1)
-  :conclusion (= (ubv_to_int (int_to_bv w1 t1)) (mod_total t1 (int.pow2 w1)))
-)
-
-
