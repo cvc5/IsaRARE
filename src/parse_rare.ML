@@ -396,27 +396,18 @@ end
 
 (* EUNOIA *)
 
-(* Traverses a given list of Eunoia decalre-rule parameters, maintaining a record of 
-   parameters which are of sort Type. Uses that information to compile to the approximate 
-   sort "?", every occurrence of an parameter Eunoia parameter of sort Type. *)
-fun temp_restore_approx_types ys [] = [] |
+(* Traverses a given list of Eunoia declare-rule parameters, removing
+   occurrences of the Type universe. This is so since we do not need
+   to reason about them directly, when translating into RARE.*)
+fun remove_type_universe [] = [] |
 
- temp_restore_approx_types ys
-                           ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
-                                            SMTLIB.Sym "Type"]))::xs)
- =
- temp_restore_approx_types ((t_name|> @{print})::ys) xs |
+remove_type_universe ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
+                                      SMTLIB.Sym "Type"])) :: xs)
+=
+remove_type_universe xs |
 
- temp_restore_approx_types ys
-                           ((x as Par ( SMTLIB.S [SMTLIB.Sym a,
-                                                  SMTLIB.Sym b]))::xs)
- =
- if List.exists (fn x => (x |> @{print}) = (b|> @{print})) ys
- then Par (SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym "?"])
-      :: temp_restore_approx_types ys xs
- else x::temp_restore_approx_types ys xs |
+remove_type_universe (x :: xs) = x :: remove_type_universe xs
 
- temp_restore_approx_types ys (x::xs) = x:: temp_restore_approx_types ys xs
 
 fun convert_bit_vectors_to_approx [] = [] |
 
@@ -438,7 +429,7 @@ fun eunoia_param_parser l =
   |-- (((Scan.repeat ((par_parser l) --| (Scan.many1 is_space)) )
       @@@ (Scan.option (par_parser l) 
        >> (fn NONE => [] | SOME xs => [xs]))) 
-       >>  temp_restore_approx_types []
+       >>  remove_type_universe
        >> convert_bit_vectors_to_approx)
 
  --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
@@ -462,11 +453,11 @@ let
       :|-- debug_msg ctxt "name" I
       --| least_one_char l "No whitespace after name found." " "
       --  eunoia_param_parser l
-      :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map str_of_par xs))
+      :|-- debug_msg ctxt "Eunoia parameter" (fn xs => String.concat (map str_of_par xs))
       -- Scan.repeat
         ((Scan.many1 is_space)
         |-- (expression_parser l))
-      :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
+      :|-- debug_msg ctxt "Eunoia expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| ignore_chars l " "
       --| (Scan.one (fn c => c = ")"))
       --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")

@@ -9,6 +9,10 @@ fun rare_type_parser (SMTLIB.Sym "?Array", [])
       = SOME (Type(\<^type_name>\<open>fun\<close>,[dummyT,Type(\<^type_name>\<open>option\<close>,[dummyT])]))
   | rare_type_parser (SMTLIB.Sym "?Set", []) = SOME (Type(\<^type_name>\<open>Set.set\<close>,[dummyT]))
   | rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
+  (* { type_variable is a variable of type Type } *)
+  | rare_type_parser (SMTLIB.Sym type_variable, []) 
+    =
+    SOME (TVar (("?" ^ type_variable, 0), []))
   | rare_type_parser _ = NONE
 
 fun rare_term_parser (SMTLIB.Sym "div_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.divide::int => int => int\<close> $ t1 $ t2)
