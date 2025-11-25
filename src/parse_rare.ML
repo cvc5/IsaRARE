@@ -397,16 +397,28 @@ end
 (* EUNOIA *)
 
 (* Traverses a given list of Eunoia declare-rule parameters, removing
-   occurrences of the Type universe. This is so since we do not need
-   to reason about them directly, when translating into RARE.*)
-fun remove_type_universe [] = [] |
+   occurrences of the Type universe, and collecting information about variables
+   of type Type, for later processing.
+   TODO: current approach renames Type variables x to "_TYPE_" ^ x. *)
+fun remove_type_universe accum [] = [] |
 
-remove_type_universe ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
-                                      SMTLIB.Sym "Type"])) :: xs)
+remove_type_universe accum ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
+                                            SMTLIB.Sym "Type"])) :: xs)
 =
-remove_type_universe xs |
+remove_type_universe ((SMTLIB.Sym t_name) :: accum) xs |
 
-remove_type_universe (x :: xs) = x :: remove_type_universe xs
+remove_type_universe accum ((Par (SMTLIB.S [SMTLIB.Sym var, 
+                                            SMTLIB.Sym t_name])) :: xs)
+=
+if List.exists (fn x => x = (SMTLIB.Sym t_name)) accum
+then
+(Par (SMTLIB.S [SMTLIB.Sym var, 
+                SMTLIB.Sym ("TYPE" ^ t_name)])) :: remove_type_universe accum xs
+else
+(Par (SMTLIB.S [SMTLIB.Sym var, 
+                SMTLIB.Sym t_name])) :: remove_type_universe accum xs |
+
+remove_type_universe accum (x :: xs) = x :: remove_type_universe accum xs
 
 
 fun convert_bit_vectors_to_approx [] = [] |
@@ -429,7 +441,7 @@ fun eunoia_param_parser l =
   |-- (((Scan.repeat ((par_parser l) --| (Scan.many1 is_space)) )
       @@@ (Scan.option (par_parser l) 
        >> (fn NONE => [] | SOME xs => [xs]))) 
-       >>  remove_type_universe
+       >>  remove_type_universe []
        >> convert_bit_vectors_to_approx)
 
  --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
