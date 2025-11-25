@@ -290,7 +290,7 @@ case String.tokens (curry (op =) #":") par of
   [_] => (Par (get_smtlib_term l [par])) |
   [x,y] => if String.isPrefix "list" y
              andalso Library.translate_string (fn " " => "" | x => x) y = "list)"
-           then (@{print}("x",x);@{print}("y",y);(ListPar (get_smtlib_term l [(x ^ ")")])))
+           then (ListPar (get_smtlib_term l [(x ^ ")")]))
            else raise_parser_error l "parameter has unknown attribute" |
   _ => raise_parser_error l "parameter has too many attributes")
 
@@ -396,22 +396,23 @@ end
 
 (* EUNOIA *)
 
-(* Traverses a given list of Eunoia decalre-rule parameters, maintaining a record of 
-   parameters which are of sort Type. Uses that information to compile to the approximate 
-   sort "?", every occurrence of an parameter Eunoia parameter of sort Type. *)
+(* Traverses a given list of Eunoia declare-rule parameters, maintaining a 
+   record of parameters which are of sort Type. Uses that information to compile 
+   to the approximate sort "?", every occurrence of an parameter Eunoia 
+   parameter of sort Type. *)
 fun temp_restore_approx_types ys [] = [] |
 
  temp_restore_approx_types ys
                            ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
                                             SMTLIB.Sym "Type"]))::xs)
  =
- temp_restore_approx_types ((t_name|> @{print})::ys) xs |
+ temp_restore_approx_types (t_name::ys) xs |
 
  temp_restore_approx_types ys
                            ((x as Par ( SMTLIB.S [SMTLIB.Sym a,
                                                   SMTLIB.Sym b]))::xs)
  =
- if List.exists (fn x => (x |> @{print}) = (b|> @{print})) ys
+ if List.exists (fn x => x = b) ys
  then Par (SMTLIB.S [SMTLIB.Sym a, SMTLIB.Sym "?"])
       :: temp_restore_approx_types ys xs
  else x::temp_restore_approx_types ys xs |
