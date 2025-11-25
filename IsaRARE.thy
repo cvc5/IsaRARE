@@ -244,7 +244,6 @@ val _ =  Outer_Syntax.local_theory \<^command_keyword>\<open>parse_rare_file\<cl
 
 declare[[IsaRARE_debug=false]]
 
-
 (*parse_rare_file "~/Downloads/int2.smt2" "HOL.Real" "TestKey2"*)
 
 
@@ -279,6 +278,8 @@ parse_rare_file "Tests/level2a_rewrites" "HOL.Real" "Level2a_Rewrites"
 parse_rare_file "Tests/level2b_rewrites" "HOL.Real" "Level2b_Rewrites"
 parse_rare_file "Tests/level2_rewrites" "HOL.Real" "Level2_Rewrites"
 parse_rare_file "Tests/level3a_rewrites" "HOL.Real" "Level3a_Rewrites"
+parse_rare_file "Tests/level3b_rewrites" "HOL.Real" "Level3b_Rewrites"
+parse_rare_file "Tests/level3c_rewrites" "HOL.Real" "Level3c_Rewrites"
 
 
 
