@@ -304,7 +304,90 @@ fun from_nat::"nat \<Rightarrow> uc_word" where
 fun from_int::"int \<Rightarrow> uc_word" where 
   "from_int i = (if i<0 then \<epsilon> else from_nat (nat i))"
 
+(* Operators specific to cvc5. Added by Jibiana Jakpor. *)
+abbreviation str_rev :: "uc_word \<Rightarrow> uc_word" where
+"str_rev \<equiv> rev"
 
+definition uc_chr_to_lower :: "uc_chr \<Rightarrow> uc_chr" where
+"uc_chr_to_lower si \<equiv> (let x = as_nat si in
+  chr (x + (if 65 \<le> x \<and> x \<le> 90 then 32 else 0))
+  )"
+
+definition str_to_lower :: "uc_word \<Rightarrow> uc_word" where
+"str_to_lower w \<equiv> map uc_chr_to_lower w"
+
+definition uc_chr_to_upper :: "uc_chr \<Rightarrow> uc_chr" where
+"uc_chr_to_upper si \<equiv> (let x = as_nat si in
+  chr (x - (if 97 \<le> x \<and> x \<le> 122 then 32 else 0)))"
+
+definition str_to_upper :: "uc_word \<Rightarrow> uc_word" where
+"str_to_upper w \<equiv> map uc_chr_to_upper w"
+
+lemma str_to_upper_cons:
+  fixes a :: "uc_chr" and s :: "uc_word"
+  shows "str_to_upper (a # s) = (uc_chr_to_upper a) # (str_to_upper s)"
+  by (simp add: str_to_upper_def)
+
+lemma uc_chr_to_lower_upper:
+  fixes c :: "uc_chr"
+  shows "uc_chr_to_lower (uc_chr_to_upper c) = uc_chr_to_lower c"
+proof (cases "97 \<le> as_nat c \<and> as_nat c \<le> 122")
+  case True
+  define c' where c'_def: "c' = (uc_chr_to_upper c)"
+  have upper_range: "65 \<le> as_nat c' \<and> as_nat c' \<le> 90" using True c'_def uc_chr_to_upper_def
+    by auto
+  have upper_val: "as_nat c' = as_nat c - 32" using c'_def True c'_def uc_chr_to_upper_def 
+    by auto
+  define d where d_def: "d = uc_chr_to_lower c'"
+  then have d_def2: "d = uc_chr_to_lower (uc_chr_to_upper c)" using d_def c'_def 
+    by auto
+  have lower_upper_val: "as_nat d = as_nat c' + 32" using c'_def True d_def uc_chr_to_lower_def upper_range 
+    by auto
+  have "as_nat d = as_nat c" using upper_val lower_upper_val upper_range 
+    by linarith
+  hence "c = d" using as_nat_inverse 
+    by metis
+  have "uc_chr_to_lower c = c" using True uc_chr_to_lower_def 
+    by (simp add: as_nat_inverse)
+  then show ?thesis using d_def2 \<open>c=d\<close> 
+    by order
+next
+  case False
+  then show ?thesis using uc_chr_to_lower_def uc_chr_to_upper_def as_nat_inverse by auto
+qed
+
+lemma str_to_lower_cons:
+  fixes a :: "uc_chr" and s :: "uc_word"
+  shows "str_to_lower (a # s) = (uc_chr_to_lower a) # (str_to_lower s)"
+  by (simp add: str_to_lower_def)
+
+lemma uc_chr_to_upper_lower:
+  fixes c :: "uc_chr"
+  shows "uc_chr_to_upper (uc_chr_to_lower c) = uc_chr_to_upper c"
+proof (cases "65 \<le> as_nat c \<and> as_nat c \<le> 90")
+  case True
+  define c' where c'_def: "c' = (uc_chr_to_lower c)"
+  have lower_range: "97 \<le> as_nat c' \<and> as_nat c' \<le> 122" using True c'_def uc_chr_to_lower_def
+    by auto
+  have lower_val: "as_nat c' = as_nat c + 32" using c'_def True c'_def uc_chr_to_lower_def 
+    by auto
+  define d where d_def: "d = uc_chr_to_upper c'"
+  then have d_def2: "d = uc_chr_to_upper (uc_chr_to_lower c)" using d_def c'_def 
+    by auto
+  have upper_lower_val: "as_nat d = as_nat c' - 32" using c'_def True d_def uc_chr_to_lower_def 
+    by (simp add: as_nat_inverse lower_val uc_chr_to_upper_def)
+  have "as_nat d = as_nat c" using lower_val upper_lower_val lower_range 
+    by linarith
+  hence "c = d" using as_nat_inverse 
+    by metis
+  have "uc_chr_to_upper c = c" using True uc_chr_to_upper_def 
+    by (simp add: as_nat_inverse)
+  then show ?thesis using d_def2 \<open>c=d\<close> 
+    by order
+next
+  case False
+  then show ?thesis using uc_chr_to_lower_def uc_chr_to_upper_def as_nat_inverse by auto
+qed
 
 subsection "Model Proofs"
 
