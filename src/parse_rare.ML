@@ -149,7 +149,7 @@ fun parse_token s [] = s |
 
 (* Common smaller parsing routines *)
 
-val is_space = (curry (op =) " ")
+fun equal_to c = (curry (op =) c)
 
 (* Lexer Util *)
 
@@ -167,7 +167,7 @@ fun raise_lexer_error l msg = raise PARSE(lexer_debug_prefix l ^ msg)
 fun lexer_add_line ctxt l line uf =
 let
   val _ = verbose_msg_lexer ctxt ("reading line nr. " ^ Int.toString(l) ^ ": " ^ line)
-  val trimmed_lines = raw_explode line |> Library.trim is_space
+  val trimmed_lines = raw_explode line |> Library.trim (equal_to " ")
 in
   case trimmed_lines of
     [] => (debug_msg_lexer ctxt l ("found empty line , skip"); uf) |
@@ -177,7 +177,7 @@ in
         val _ = debug_msg_lexer ctxt l ("found non empty line, start parsing rule");
         (* If line has a comment in it cut it *)
         val sanitized_lines =
-          Library.take (Library.find_index (curry (op =) ";") trimmed_lines) trimmed_lines  |> Library.trim is_space
+          Library.take (Library.find_index (equal_to ";") trimmed_lines) trimmed_lines  |> Library.trim (equal_to " ")
         val token =
           parse_token uf sanitized_lines
           handle 
@@ -231,15 +231,15 @@ in
 end
 
 fun expect_char l err_msg c cs =
-  Scan.catch (Scan.one (curry (op =) c)) cs
+  Scan.catch (Scan.one (equal_to c)) cs
   handle (Fail _) => raise_parser_error l ("Expected '" ^ c ^ "' but could not find it." ^ err_msg)
 
 fun least_one_char l err_msg c cs =
-  Scan.catch (Scan.many1 (curry (op =) c)) cs
+  Scan.catch (Scan.many1 (equal_to c)) cs
   handle (Fail _) => raise_parser_error l ("Expected at least one '" ^ c ^ "' but could not find any." ^ err_msg)
 
 fun ignore_chars l c cs =
-  Scan.catch (Scan.many (curry (op =) c)) cs
+  Scan.catch (Scan.many (equal_to c)) cs
   handle (Fail _) => raise_parser_error l ("Was expecting more input but rule might have ended prematurely. ")
 
 
@@ -290,7 +290,7 @@ case String.tokens (curry (op =) #":") par of
   [_] => (Par (get_smtlib_term l [par])) |
   [x,y] => if String.isPrefix "list" y
              andalso Library.translate_string (fn " " => "" | x => x) y = "list)"
-           then (@{print}("x",x);@{print}("y",y);(ListPar (get_smtlib_term l [(x ^ ")")])))
+           then (ListPar (get_smtlib_term l [(x ^ ")")]))
            else raise_parser_error l "parameter has unknown attribute" |
   _ => raise_parser_error l "parameter has too many attributes")
 
@@ -298,8 +298,8 @@ fun par_parser l = (parse_next_term l >> implode) :|-- (fn s => fn cs => if s<>"
 
 fun param_parser l =
   expect_char l "Could not find first opening parentheses in parameter list" "(" 
-  --| (Scan.many is_space)
-  |-- (Scan.repeat (par_parser l --| (Scan.many1 is_space))
+  --| (Scan.many (equal_to " "))
+  |-- (Scan.repeat (par_parser l --| (Scan.many1 (equal_to " ")))
       @@@ (Scan.option (par_parser l) >> (fn NONE => [] | SOME xs => [xs])))
  --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
 
@@ -308,26 +308,26 @@ fun param_parser l =
 fun let_parser l (cs : string list) = (@{print}("let",cs);
   cs |> 
   Scan.catch(
-  (Scan.many1 is_space)
-  --| (Scan.one (curry (op =) "("))
-  -- Scan.many is_space
-  --| Scan.one (curry (op =) "d")
-  --| Scan.one (curry (op =) "e")
-  --| Scan.one (curry (op =) "f")
-  --| Scan.many1 is_space
+  (Scan.many1 (equal_to " "))
+  --| (Scan.one (equal_to "("))
+  -- Scan.many (equal_to " ")
+  --| Scan.one (equal_to "d")
+  --| Scan.one (equal_to "e")
+  --| Scan.one (equal_to "d")
+  --| Scan.many1 (equal_to " ")
   |-- (Scan.repeat ((
-        (Scan.one (curry (op =) "("))
+        (Scan.one (equal_to "("))
         |-- parse_next_term l
-        --| (Scan.many1 is_space)
+        --| (Scan.many1 (equal_to " "))
         -- parse_next_term l
-        --| (Scan.many is_space)
-        --| (Scan.one (curry (op =) ")"))
-        --| (Scan.many is_space)
+        --| (Scan.many (equal_to " "))
+        --| (Scan.one (equal_to ")"))
+        --| (Scan.many (equal_to " "))
       )
       >> (fn (v,t) => (get_smtlib_term l v,get_smtlib_term l t))
       ))
-  --| Scan.many is_space
-  --| Scan.one (curry (op =) ")"))
+  --| Scan.many (equal_to " ")
+  --| Scan.one (equal_to ")"))
   >> Option.SOME
   handle
     (Fail _) => (NONE,cs)
@@ -362,7 +362,7 @@ let
       -- let_parser l
       :|-- debug_msg ctxt "possible let defs" (fn (SOME xs) => str_of_lets xs | NONE => "")
       -- Scan.repeat
-        ((Scan.many1 is_space)
+        ((Scan.many1 (equal_to " "))
         |-- (expression_parser l))
       :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| ignore_chars l " "
@@ -437,8 +437,8 @@ fun convert_bit_vectors_to_approx [] = [] |
 
 fun eunoia_param_parser l =
   expect_char l "Could not find first opening parentheses in parameter list" "(" 
-  --| (Scan.many is_space)
-  |-- (((Scan.repeat ((par_parser l) --| (Scan.many1 is_space)) )
+  --| (Scan.many (equal_to " "))
+  |-- (((Scan.repeat ((par_parser l) --| (Scan.many1 (equal_to " "))) )
       @@@ (Scan.option (par_parser l) 
        >> (fn NONE => [] | SOME xs => [xs]))) 
        >>  remove_type_universe []
@@ -467,7 +467,7 @@ let
       --  eunoia_param_parser l
       :|-- debug_msg ctxt "Eunoia parameter" (fn xs => String.concat (map str_of_par xs))
       -- Scan.repeat
-        ((Scan.many1 is_space)
+        ((Scan.many1 (equal_to " "))
         |-- (expression_parser l))
       :|-- debug_msg ctxt "Eunoia expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| ignore_chars l " "
