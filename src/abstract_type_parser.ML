@@ -4,15 +4,33 @@
 Additional type and term parser for RARE for its features that extend SMT-LIB
 *)
 
-
 fun rare_type_parser (SMTLIB.Sym "?Array", [])
       = SOME (Type(\<^type_name>\<open>fun\<close>,[dummyT,Type(\<^type_name>\<open>option\<close>,[dummyT])]))
   | rare_type_parser (SMTLIB.Sym "?Set", []) = SOME (Type(\<^type_name>\<open>Set.set\<close>,[dummyT]))
   | rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
+  (* Check if it is an Eunoia's Type variable. *)
+  | rare_type_parser (SMTLIB.Sym variable, []) = if String.isPrefix "TYPE" variable
+                                                 then (* Eunoia's Type variables are represented
+                                                         as an schematic type variable, whose index
+                                                         is 0: when a Type variable is present in
+                                                         an Eunoia rule, the corresponding Isabelle
+                                                         lemma begins with a quantification of
+                                                         the corresponding schematic type variable.*)
+                                                      SOME (TVar (("?" ^ variable, 0), []))
+                                                 else NONE
   | rare_type_parser _ = NONE
 
+(* Embedding of arithmetic symbols. *)
+fun rare_term_parser (SMTLIB.Sym "div_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.divide::int => int => int\<close> $ t1 $ t2)
+  | rare_term_parser (SMTLIB.Sym "mod_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.modulo::int => int => int\<close> $ t1 $ t2)
+  | rare_term_parser (SMTLIB.Sym "divisible", [t1, t2]) = SOME ( \<^term>\<open>Rings.dvd::int => int => bool\<close> $ t1 $ t2)
+  | rare_term_parser (SMTLIB.Sym "abs", [t]) = SOME ( \<^term>\<open>Groups.abs::int => int\<close> $ t)
+  | rare_term_parser _ = NONE
+
+(* Registering parsers for specific constructions. *)
 val _ = Theory.setup (Context.theory_map (
-  SMTLIB_Proof.add_type_parser rare_type_parser))
+  SMTLIB_Proof.add_type_parser rare_type_parser #>
+  SMTLIB_Proof.add_term_parser rare_term_parser))
 
 (*
 fun mk_test (t1, t2) = (Const (\<^const_name>\<open>Word.word_cat\<close>, dummyT --> dummyT --> dummyT))  $ t1 $ t2

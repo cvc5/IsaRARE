@@ -147,6 +147,10 @@ fun parse_token s [] = s |
   parse_token _ _ = raise TOKEN("error parsing token")
 
 
+(* Common smaller parsing routines *)
+
+fun equal_to c = (curry (op =) c)
+
 (* Lexer Util *)
 
 fun debug_msg_lexer ctxt l msg =
@@ -163,7 +167,7 @@ fun raise_lexer_error l msg = raise PARSE(lexer_debug_prefix l ^ msg)
 fun lexer_add_line ctxt l line uf =
 let
   val _ = verbose_msg_lexer ctxt ("reading line nr. " ^ Int.toString(l) ^ ": " ^ line)
-  val trimmed_lines = raw_explode line |> Library.trim (curry (op =) " ")
+  val trimmed_lines = raw_explode line |> Library.trim (equal_to " ")
 in
   case trimmed_lines of
     [] => (debug_msg_lexer ctxt l ("found empty line , skip"); uf) |
@@ -173,7 +177,7 @@ in
         val _ = debug_msg_lexer ctxt l ("found non empty line, start parsing rule");
         (* If line has a comment in it cut it *)
         val sanitized_lines =
-          Library.take (Library.find_index (curry (op =) ";") trimmed_lines) trimmed_lines  |> Library.trim (curry (op =) " ")
+          Library.take (Library.find_index (equal_to ";") trimmed_lines) trimmed_lines  |> Library.trim (equal_to " ")
         val token =
           parse_token uf sanitized_lines
           handle 
@@ -227,15 +231,15 @@ in
 end
 
 fun expect_char l err_msg c cs =
-  Scan.catch (Scan.one (curry (op =) c)) cs
+  Scan.catch (Scan.one (equal_to c)) cs
   handle (Fail _) => raise_parser_error l ("Expected '" ^ c ^ "' but could not find it." ^ err_msg)
 
 fun least_one_char l err_msg c cs =
-  Scan.catch (Scan.many1 (curry (op =) c)) cs
+  Scan.catch (Scan.many1 (equal_to c)) cs
   handle (Fail _) => raise_parser_error l ("Expected at least one '" ^ c ^ "' but could not find any." ^ err_msg)
 
 fun ignore_chars l c cs =
-  Scan.catch (Scan.many (curry (op =) c)) cs
+  Scan.catch (Scan.many (equal_to c)) cs
   handle (Fail _) => raise_parser_error l ("Was expecting more input but rule might have ended prematurely. ")
 
 
@@ -251,18 +255,15 @@ fun type_parser _ (("d"::"e"::"f"::"i"::"n"::"e"::"-"::"r"::"u"::"l"::"e"::"*"::
                   ::"r"::"u"::"l"::"e"::cs)) = (DEFINE_COND_RULE,cs) |
   type_parser l _ = raise_parser_error l "Could not read type!"
 
-(* In alf the rule type is determined by annotations and not by a keyword. However, there is some
-syntax sugar that allows to write declare-axiom for rules without any conditions. Since the type
-depends on whether a :rare-fixed-point or a :premises ((= F false)) term is found later in the
-rule we cannot determine it here yet. *)
+(* Eunoia declare-rule token *)
 
-datatype alf_rule_type = ALF_AXIOM | ALF_RULE
+datatype eunoia_declare_rule = EUNOIA_RULE
 
-fun alf_type_parser _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"a"::"x"::"i"::"o"::"m":: cs)) =
-    (ALF_AXIOM,cs) |
-  alf_type_parser _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"r"::"u"::"l"::"e":: cs)) =
-    (ALF_RULE,cs) |
-  alf_type_parser l _ = raise_parser_error l "Could not read type of alf rule!"
+fun eunoia_declare_rule_lexer 
+        _ (("d"::"e"::"c"::"l"::"a"::"r"::"e"::"-"::"r"::"u"::"l"::"e":: cs)) =
+    (EUNOIA_RULE,cs) |
+  eunoia_declare_rule_lexer 
+      l _ = raise_parser_error l "Could not read Eunoia's declare-rule keyword!"
 
 (* Rule name *)
 
@@ -297,8 +298,8 @@ fun par_parser l = (parse_next_term l >> implode) :|-- (fn s => fn cs => if s<>"
 
 fun param_parser l =
   expect_char l "Could not find first opening parentheses in parameter list" "(" 
-  --| (Scan.many (curry (op =) " "))
-  |-- (Scan.repeat (par_parser l --| (Scan.many1 (curry (op =) " ")))
+  --| (Scan.many (equal_to " "))
+  |-- (Scan.repeat (par_parser l --| (Scan.many1 (equal_to " ")))
       @@@ (Scan.option (par_parser l) >> (fn NONE => [] | SOME xs => [xs])))
  --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
 
@@ -307,26 +308,26 @@ fun param_parser l =
 fun let_parser l (cs : string list) = (@{print}("let",cs);
   cs |> 
   Scan.catch(
-  (Scan.many1 (curry (op =) " "))
-  --| (Scan.one (curry (op =) "("))
-  -- Scan.many (curry (op =) " ")
-  --| Scan.one (curry (op =) "d")
-  --| Scan.one (curry (op =) "e")
-  --| Scan.one (curry (op =) "f")
-  --| Scan.many1 (curry (op =) " ")
+  (Scan.many1 (equal_to " "))
+  --| (Scan.one (equal_to "("))
+  -- Scan.many (equal_to " ")
+  --| Scan.one (equal_to "d")
+  --| Scan.one (equal_to "e")
+  --| Scan.one (equal_to "d")
+  --| Scan.many1 (equal_to " ")
   |-- (Scan.repeat ((
-        (Scan.one (curry (op =) "("))
+        (Scan.one (equal_to "("))
         |-- parse_next_term l
-        --| (Scan.many1 (curry (op =) " "))
+        --| (Scan.many1 (equal_to " "))
         -- parse_next_term l
-        --| (Scan.many (curry (op =) " "))
-        --| (Scan.one (curry (op =) ")"))
-        --| (Scan.many (curry (op =) " "))
+        --| (Scan.many (equal_to " "))
+        --| (Scan.one (equal_to ")"))
+        --| (Scan.many (equal_to " "))
       )
       >> (fn (v,t) => (get_smtlib_term l v,get_smtlib_term l t))
       ))
-  --| Scan.many (curry (op =) " ")
-  --| Scan.one (curry (op =) ")"))
+  --| Scan.many (equal_to " ")
+  --| Scan.one (equal_to ")"))
   >> Option.SOME
   handle
     (Fail _) => (NONE,cs)
@@ -361,22 +362,22 @@ let
       -- let_parser l
       :|-- debug_msg ctxt "possible let defs" (fn (SOME xs) => str_of_lets xs | NONE => "")
       -- Scan.repeat
-        ((Scan.many1 (curry (op =) " "))
+        ((Scan.many1 (equal_to " "))
         |-- (expression_parser l))
       :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| ignore_chars l " "
       --| (Scan.one (fn c => c = ")"))
       --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")
  
-  fun seperate_expr DEFINE_RULE [m,t] = (NONE,m,t,NONE) |
-      seperate_expr DEFINE_COND_RULE [p,m,t] = (SOME p,m,t,NONE) |
-      seperate_expr DEFINE_RULE_STAR [m,t] = (NONE,m,t,NONE) |
-      seperate_expr DEFINE_RULE_STAR [m,t,c] = (NONE,m,t,SOME c) |
-      seperate_expr r xs =
+  fun separate_expr DEFINE_RULE [m,t] = (NONE,m,t,NONE) |
+      separate_expr DEFINE_COND_RULE [p,m,t] = (SOME p,m,t,NONE) |
+      separate_expr DEFINE_RULE_STAR [m,t] = (NONE,m,t,NONE) |
+      separate_expr DEFINE_RULE_STAR [m,t,c] = (NONE,m,t,SOME c) |
+      separate_expr r xs =
         raise_parser_error l ("Rule type is " ^ str_of_type r ^ " but found "
         ^ Int.toString(length xs) ^ "expressions")
 
-  val (rprecondition,rmatch,rtarget,rcontext_expr) = seperate_expr rtyp rexpressions
+  val (rprecondition,rmatch,rtarget,rcontext_expr) = separate_expr rtyp rexpressions
 in 
 
 ({
@@ -393,50 +394,103 @@ in
 end
 
 
+(* EUNOIA *)
+
+(* Traverses a given list of Eunoia declare-rule parameters, removing
+   occurrences of the Type universe, and collecting information about variables
+   of type Type, for later processing.
+   TODO: current approach renames Type variables x to "_TYPE_" ^ x. *)
+fun remove_type_universe accum [] = [] |
+
+remove_type_universe accum ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
+                                            SMTLIB.Sym "Type"])) :: xs)
+=
+remove_type_universe ((SMTLIB.Sym t_name) :: accum) xs |
+
+remove_type_universe accum ((Par (SMTLIB.S [SMTLIB.Sym var, 
+                                            SMTLIB.Sym t_name])) :: xs)
+=
+if List.exists (fn x => x = (SMTLIB.Sym t_name)) accum
+then
+(Par (SMTLIB.S [SMTLIB.Sym var, 
+                SMTLIB.Sym ("TYPE" ^ t_name)])) :: remove_type_universe accum xs
+else
+(Par (SMTLIB.S [SMTLIB.Sym var, 
+                SMTLIB.Sym t_name])) :: remove_type_universe accum xs |
+
+remove_type_universe accum (x :: xs) = x :: remove_type_universe accum xs
 
 
-fun parse_single_alf_rule ctxt (l,cs) =
+fun convert_bit_vectors_to_approx [] = [] |
+
+ convert_bit_vectors_to_approx
+                           ((Par (SMTLIB.S [SMTLIB.Sym t_name, 
+                                            SMTLIB.S [SMTLIB.Sym "BitVec",
+                                                      SMTLIB.Sym width]
+                                            ]))::xs)
+ =
+ ((Par (SMTLIB.S [SMTLIB.Sym t_name,
+                  SMTLIB.Sym "?BitVec"]))::convert_bit_vectors_to_approx xs) |
+
+ convert_bit_vectors_to_approx (x::xs) = x::convert_bit_vectors_to_approx xs
+
+
+fun eunoia_param_parser l =
+  expect_char l "Could not find first opening parentheses in parameter list" "(" 
+  --| (Scan.many (equal_to " "))
+  |-- (((Scan.repeat ((par_parser l) --| (Scan.many1 (equal_to " "))) )
+      @@@ (Scan.option (par_parser l) 
+       >> (fn NONE => [] | SOME xs => [xs]))) 
+       >>  remove_type_universe []
+       >> convert_bit_vectors_to_approx)
+
+ --| expect_char l "Could not find final closing parentheses in parameter list" ")" 
+
+
+fun parse_single_eunoia_rule ctxt (l,cs) =
 let
   
   fun debug_msg ctxt msg f (x,t) cs =
   ((debug_msg_parser ctxt ("Parsed " ^ msg ^ ". Token parsed in is: " ^  f t );((x,t),cs)))
 
-  val (((((_,alfT),rname),rparams),rexpressions),cs')
+  val (((((_,eunoiaT),rname),rparams),rexpressions),cs')
     = cs
       |>
-      Scan.succeed (debug_msg_parser ctxt ("Start parsing alf rule in line " ^ Int.toString(l) ))
+      Scan.succeed (debug_msg_parser ctxt ("Start parsing eunoia rule in line " ^ Int.toString(l) ))
       --| (Scan.one (fn c => c = "("))
       --| ignore_chars l " "
-      -- alf_type_parser l
+      -- eunoia_declare_rule_lexer l
       --| least_one_char l "No whitespace after type found." " "
       -- name_parser l
       :|-- debug_msg ctxt "name" I
       --| least_one_char l "No whitespace after name found." " "
-      --  param_parser l
-      :|-- debug_msg ctxt "parameter" (fn xs => String.concat (map str_of_par xs))
+      --  eunoia_param_parser l
+      :|-- debug_msg ctxt "Eunoia parameter" (fn xs => String.concat (map str_of_par xs))
       -- Scan.repeat
-        ((Scan.many1 (curry (op =) " "))
+        ((Scan.many1 (equal_to " "))
         |-- (expression_parser l))
-      :|-- debug_msg ctxt "expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
+      :|-- debug_msg ctxt "Eunoia expressions" (fn xs => String.concat (map SMTLIB.str_of xs))
       --| ignore_chars l " "
       --| (Scan.one (fn c => c = ")"))
       --| (fn cs => if cs = [] then Scan.succeed [] cs else raise_parser_error l "Text found after end of rule")
 
-  fun seperate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "conclusion")::[c]) = (DEFINE_COND_RULE,SOME p,c) |
-      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c,SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) | (*TODO: Ask Andy does this has the context expr as argument? Or do thy not exist anymore?*)
-      seperate_expr_rule ((SMTLIB.Key "conclusion")::[c]) = (DEFINE_RULE,NONE,c) |
-      seperate_expr_rule xs =(@{print}("xs",xs);
-        raise_parser_error l ("Found "
-        ^ Int.toString(length xs) ^ " expressions in rule but expected less or more than that."))
+  fun separate_expr_rule ((SMTLIB.Key "args")::args::(SMTLIB.Key "conclusion")::[c]) 
+      = (* We ignore occurrences of Eunoia's :args *)
+      (DEFINE_RULE,NONE,c) |
 
-  fun seperate_expr_axiom (c::[SMTLIB.Key "rare-fixed-point"]) = (DEFINE_RULE_STAR,NONE,c) |
-      seperate_expr_axiom [c] = (DEFINE_RULE,NONE,c) |
-      seperate_expr_axiom xs = (@{print}("xs",xs);
-        raise_parser_error l ("Found "
-        ^ Int.toString(length xs) ^ " expressions in axiom but expected less or more than that."))
+      separate_expr_rule ((SMTLIB.Key "premises")::p::(SMTLIB.Key "args")::args::(SMTLIB.Key "conclusion")::[c])
+      =
+      (DEFINE_COND_RULE,SOME (@{print}("Eunoia premises parsed:", p); p |> 
+        (fn SMTLIB.S xs => (if length xs = 1 then hd xs else SMTLIB.S ([SMTLIB.Sym "and"] @ xs)))) , c) |
 
+      separate_expr_rule xs 
+      =
+      (@{print}("xs",xs); raise_parser_error l 
+                                             ("Found " 
+                                              ^ Int.toString(length xs) 
+                                              ^ " expressions in rule but expected less or more than that."))
 
-  val (rtyp,rprecondition,conclusion) = rexpressions |> (if alfT = ALF_RULE then seperate_expr_rule else seperate_expr_axiom)
+  val (rtyp,rprecondition,conclusion) = rexpressions |> separate_expr_rule
 
   val (rmatch,rtarget) = (fn (SMTLIB.S [SMTLIB.Sym "=", x,y]) => (x,y) | _ => raise_parser_error l "" ) conclusion
 in 
@@ -458,8 +512,8 @@ end
 fun parse_rewrites ctxt xs =
    map ((if Config.get ctxt IsaRARE_Config.ruleFormat = "RARE"
          then parse_single_rule
-         else if Config.get ctxt IsaRARE_Config.ruleFormat = "ALF"
-         then parse_single_alf_rule
+         else if Config.get ctxt IsaRARE_Config.ruleFormat = "EUNOIA"
+         then parse_single_eunoia_rule
          else raise_parser_error 0 "Unkown proof format set") ctxt)
    (map (fn (i,x) => (i,raw_explode x)) xs)
 
