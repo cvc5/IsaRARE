@@ -9,11 +9,16 @@ fun rare_type_parser (SMTLIB.Sym "?Array", [])
       = SOME (Type(\<^type_name>\<open>fun\<close>,[dummyT,Type(\<^type_name>\<open>option\<close>,[dummyT])]))
   | rare_type_parser (SMTLIB.Sym "?Set", []) = SOME (Type(\<^type_name>\<open>Set.set\<close>,[dummyT]))
   | rare_type_parser (SMTLIB.Sym "?", []) = SOME (dummyT)
-  | rare_type_parser (SMTLIB.Sym variable, [])
-    =
-    if String.isPrefix "TYPE" variable
-    then SOME (TVar (("?" ^ variable, 0), []))
-    else NONE
+  (* Check if it is an Eunoia's Type variable. *)
+  | rare_type_parser (SMTLIB.Sym variable, []) = if String.isPrefix "TYPE" variable
+                                                 then (* Eunoia's Type variables are represented
+                                                         as an schematic type variable, whose index
+                                                         is 0: when a Type variable is present in
+                                                         an Eunoia rule, the corresponding Isabelle
+                                                         lemma begins with a quantification of
+                                                         the corresponding schematic type variable.*)
+                                                      SOME (TVar (("dummy" ^ variable, 0), []))
+                                                 else NONE
   | rare_type_parser _ = NONE
 
 fun rare_term_parser (SMTLIB.Sym "div_total", [t1, t2]) = SOME ( \<^term>\<open>Rings.divide::int => int => int\<close> $ t1 $ t2)
