@@ -16,7 +16,7 @@ fun rare_type_parser (SMTLIB.Sym "?Array", [])
                                                          an Eunoia rule, the corresponding Isabelle
                                                          lemma begins with a quantification of
                                                          the corresponding schematic type variable.*)
-                                                      SOME (TVar (("dummy" ^ variable, 0), []))
+                                                      SOME (TVar (("?" ^ variable, 0), []))
                                                  else NONE
   | rare_type_parser _ = NONE
 
